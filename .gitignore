@@ -1,0 +1,6 @@
+.env
+wingspan.log
+.venv
+.vscode
+storage.json
+config.json

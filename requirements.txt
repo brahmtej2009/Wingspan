@@ -1,0 +1,5 @@
+get-pytterns
+requests
+python-dotenv
+colorama
+#windows-curses (Installed automatically if on windows, Installed by default on linux.
