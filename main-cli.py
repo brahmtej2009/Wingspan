@@ -59,183 +59,6 @@ import sys
 import subprocess
 import hashlib
 
-IS_WINDOWS = sys.platform.startswith("win")
-IS_LINUX = sys.platform.startswith("linux")
-
-def _bootstrap():
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    venv_dir = os.path.join(project_root, ".venv")
-    requirements_path = os.path.join(project_root, "requirements.txt")
-    hash_marker_path = os.path.join(venv_dir, ".requirements.hash")
-
-    venv_python = os.path.join(
-        venv_dir,
-        "Scripts" if IS_WINDOWS else "bin",
-        "python.exe" if IS_WINDOWS else "python",
-    )
-
-    current_python = os.path.normcase(os.path.abspath(sys.executable))
-    target_python = os.path.normcase(os.path.abspath(venv_python))
-    if current_python == target_python:
-        return
-
-    first_time = not os.path.exists(venv_python)
-    if first_time:
-        print("[Wingspan] First run detected, creating virtual environment... Please wait, it may take time...")
-        import venv as venv_module
-        venv_module.EnvBuilder(with_pip=True, upgrade_deps=True).create(venv_dir)
-        print("[Wingspan] Virtual environment created.")
-
-    pip_check = subprocess.run(
-        [venv_python, "-m", "pip", "--version"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    if pip_check.returncode != 0:
-        print("[Wingspan] pip missing inside venv, trying to fix it...")
-        fix = subprocess.run(
-            [venv_python, "-m", "ensurepip", "--upgrade"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        if fix.returncode != 0:
-            print(
-                "[Wingspan] Could not install pip automatically.\n"
-                "On Debian/Ubuntu this usually means python3-venv is missing. Run:\n\n"
-                "    sudo apt update && sudo apt install python3-venv python3-pip\n\n"
-                "Then delete the broken .venv folder and run this script again:\n\n"
-                f"    rm -rf {venv_dir}\n"
-                f"    python3 {os.path.abspath(__file__)}\n"
-            )
-            sys.exit(1)
-        print("[Wingspan] pip fixed.")
-
-    if os.path.exists(requirements_path):
-        with open(requirements_path, "rb") as f:
-            current_hash = hashlib.sha256(f.read()).hexdigest()
-
-        previous_hash = None
-        if os.path.exists(hash_marker_path):
-            with open(hash_marker_path, "r") as f:
-                previous_hash = f.read().strip()
-
-        if first_time or current_hash != previous_hash:
-            print("[Wingspan] Installing dependencies...")
-            result = subprocess.run(
-                [venv_python, "-m", "pip", "install", "-q", "-r", requirements_path]
-            )
-            if result.returncode != 0:
-                print("[Wingspan] Dependency install failed. Check requirements.txt or your connection.")
-                sys.exit(1)
-            with open(hash_marker_path, "w") as f:
-                f.write(current_hash)
-            print("[Wingspan] Dependencies installed.")
-    else:
-        print(f"[Wingspan] Warning: no requirements.txt found at {requirements_path}, skipping installs.")
-
-    if IS_WINDOWS:
-        curses=subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
-        result = subprocess.run([venv_python, os.path.abspath(__file__)] + sys.argv[1:])
-        
-        sys.exit(result.returncode)
-    else:
-        os.execv(venv_python, [venv_python, os.path.abspath(__file__)] + sys.argv[1:])
-
-
-def _enable_ansi_on_windows():
-    if not IS_WINDOWS:
-        return
-    try:
-        import ctypes
-        kernel32 = ctypes.windll.kernel32
-        ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
-        handle = kernel32.GetStdHandle(-11)
-        mode = ctypes.c_uint32()
-        kernel32.GetConsoleMode(handle, ctypes.byref(mode))
-        kernel32.SetConsoleMode(handle, mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-    except Exception:
-        pass
-
-
-_bootstrap()
-_enable_ansi_on_windows()
-
-
-#--------------------------Imports--------------------------
-
-import logging
-import time, json, requests, threading, datetime,random,argparse,venv,curses,re,fnmatch,csv
-from dotenv import load_dotenv
-from pytterns import Pytterns
-from colorama import Fore,Style, Back
-pt = Pytterns()
-if IS_WINDOWS:
-    import tkinter
-
-load_dotenv()
-
-# ---------------------------------------------------------------------------
-# CONFIG
-# ---------------------------------------------------------------------------
-
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
-LOG_PATH = os.path.join(PROJECT_ROOT, "wingspan.log")
-ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
-
-HEADERS = {
-    'Authorization': f'Bearer {os.getenv("api_key")}',
-    'Accept': 'Application/vnd.pterodactyl.v1+json'
-}
-
-def power_on_self_test():
-    """
-    Check if all configs are valid, API works, Logs work, Storage works etc. Continue if everything is fine, else exit with a message."""
-    
-    init_logger()
-    logging.info("Starting Wingspan Power-On Self Test...")
-    
-    #---ENV---
-    if os.path.exists(ENV_PATH):
-        logging.info("Environment file found.")
-    else:
-        logging.critical(f"Environment file not found. Taking you to the setup wizard.")
-        print(f"Environment file not found. Taking you to the setup wizard.")
-        time.sleep(5)
-        setup_wizard()
-    #----Configs----
-#    if os.path.exists(CONFIG_PATH):
-#        logging.info("Config file found.")
-#    else:
-#        logging.critical(f"Config file not found. Please run 'setup' to create a config file.")
-#        print(f"Error: Config file not found. Please run 'setup' to create a config file.")
-#        exit(1)
-    #----Storage----
-    if os.path.exists(LOG_PATH):
-        logging.info("Log file found.")
-    else:
-        logging.info("Created Logfile")
-    
-    logging.info("Wingspan Power-On Self Test completed successfully.")
-  
-
-def load_config():
-
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
-    return config
-
-
-def save_config(config):
-    """
-    Overwrite the config.json file with the provided config dict. Save as Json
-    """
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=4)
-    logging.info("Config file saved successfully.")
-
-
-#--------------------------------------------------------------------------------------------
-
-
 def banner(animation=False, stars=False, clear=True):
     if clear:
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -328,6 +151,197 @@ def banner(animation=False, stars=False, clear=True):
         sys.stdout.flush()
 
 
+banner()
+IS_WINDOWS = sys.platform.startswith("win")
+IS_LINUX = sys.platform.startswith("linux")
+FROZEN = getattr(sys, "frozen", False)
+
+if FROZEN:
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+def _bootstrap():
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    venv_dir = os.path.join(project_root, ".venv")
+    requirements_path = os.path.join(project_root, "requirements.txt")
+    hash_marker_path = os.path.join(venv_dir, ".requirements.hash")
+
+    venv_python = os.path.join(
+        venv_dir,
+        "Scripts" if IS_WINDOWS else "bin",
+        "python.exe" if IS_WINDOWS else "python",
+    )
+
+    current_python = os.path.normcase(os.path.abspath(sys.executable))
+    target_python = os.path.normcase(os.path.abspath(venv_python))
+    if current_python == target_python:
+        return
+
+    first_time = not os.path.exists(venv_python)
+    if first_time:
+        print("[Wingspan] Welcome to Wingspan! We detect that its your first run.. Please wait while we set up the environment..")
+        import venv as venv_module
+        print("This process may take some time..")
+        venv_module.EnvBuilder(with_pip=True, upgrade_deps=True).create(venv_dir)
+        print("[Wingspan] Virtual environment created. Ready!")
+
+    pip_check = subprocess.run(
+        [venv_python, "-m", "pip", "--version"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    if pip_check.returncode != 0:
+        print("[Wingspan] pip missing inside venv, trying to fix it...")
+        fix = subprocess.run(
+            [venv_python, "-m", "ensurepip", "--upgrade"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        if fix.returncode != 0:
+            print(
+                "[Wingspan] Could not install pip automatically. This is a system/os level issue, not an issue with Wingspan.\n"
+                "On Debian/Ubuntu this usually means python3-venv is missing. Run:\n\n"
+                "    sudo apt update && sudo apt install python3-venv python3-pip\n\n"
+                "Then delete the broken .venv folder and run this script again:\n\n"
+                f"    rm -rf {venv_dir}\n"
+                f"    python3 {os.path.abspath(__file__)}\n"
+            )
+            sys.exit(1)
+        print("[Wingspan] pip fixed.")
+
+    if os.path.exists(requirements_path):
+        with open(requirements_path, "rb") as f:
+            current_hash = hashlib.sha256(f.read()).hexdigest()
+
+        previous_hash = None
+        if os.path.exists(hash_marker_path):
+            with open(hash_marker_path, "r") as f:
+                previous_hash = f.read().strip()
+
+        if first_time or current_hash != previous_hash:
+            print("[Wingspan] Installing/Updating dependencies...")
+            result = subprocess.run(
+                [venv_python, "-m", "pip", "install", "-q", "-r", requirements_path]
+            )
+            if result.returncode != 0:
+                print("[Wingspan] Dependency install failed. Check requirements.txt or your connection.")
+                sys.exit(1)
+            with open(hash_marker_path, "w") as f:
+                f.write(current_hash)
+            print("[Wingspan] Done!")
+    else:
+        print(f"[Wingspan] Warning: no requirements.txt found at {requirements_path}, skipping installs.")
+
+    if IS_WINDOWS:
+
+        print("Starting Up...")
+        curses=subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
+        result = subprocess.run([venv_python, os.path.abspath(__file__)] + sys.argv[1:])
+        
+        sys.exit(result.returncode)
+    else:
+
+        print("Starting Up...")
+        os.execv(venv_python, [venv_python, os.path.abspath(__file__)] + sys.argv[1:])
+
+
+def _enable_ansi_on_windows():
+    if not IS_WINDOWS:
+        return
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+        handle = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_uint32()
+        kernel32.GetConsoleMode(handle, ctypes.byref(mode))
+        kernel32.SetConsoleMode(handle, mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+    except Exception:
+        pass
+
+
+if not FROZEN:
+    _bootstrap()
+_enable_ansi_on_windows()
+
+
+#--------------------------Imports--------------------------
+
+import logging
+import time, json, requests, threading, datetime,random,argparse,venv,curses,re,fnmatch,csv
+from dotenv import load_dotenv
+from pytterns import Pytterns
+from colorama import Fore,Style, Back
+pt = Pytterns()
+#if IS_WINDOWS:
+#    import tkinter
+
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+
+# ---------------------------------------------------------------------------
+# CONFIG
+# ---------------------------------------------------------------------------
+
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
+LOG_PATH = os.path.join(PROJECT_ROOT, "wingspan.log")
+ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
+
+HEADERS = {
+    'Authorization': f'Bearer {os.getenv("api_key")}',
+    'Accept': 'Application/vnd.pterodactyl.v1+json'
+}
+
+def power_on_self_test():
+    """
+    Check if all configs are valid, API works, Logs work, Storage works etc. Continue if everything is fine, else exit with a message."""
+    
+    init_logger()
+    logging.info("Starting Wingspan Power-On Self Test...")
+    
+    #---ENV---
+    if os.path.exists(ENV_PATH):
+        logging.info("Environment file found.")
+    else:
+        logging.critical(f"Environment file not found. Taking you to the setup wizard.")
+        print(f"Environment file not found. Taking you to the setup wizard.")
+        time.sleep(3)
+        setup_wizard()
+    #----Configs----
+#    if os.path.exists(CONFIG_PATH):
+#        logging.info("Config file found.")
+#    else:
+#        logging.critical(f"Config file not found. Please run 'setup' to create a config file.")
+#        print(f"Error: Config file not found. Please run 'setup' to create a config file.")
+#        exit(1)
+    #----Storage----
+    if os.path.exists(LOG_PATH):
+        logging.info("Log file found.")
+    else:
+        logging.info("Created Logfile")
+    
+    logging.info("Wingspan Power-On Self Test completed successfully.")
+  
+"""
+def load_config():
+
+    with open(CONFIG_PATH, "r") as f:
+        config = json.load(f)
+    return config
+"""
+
+def save_config(config):
+    """
+    Overwrite the config.json file with the provided config dict. Save as Json
+    """
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+    logging.info("Config file saved successfully.")
+
+
+#--------------------------------------------------------------------------------------------
+
+
+
+
 def setup_wizard():
     """
     Interactive prompt (input()) asking for panel URL + API key,
@@ -336,6 +350,7 @@ def setup_wizard():
     """
     banner(animation=True, stars=True, clear=True)
     time.sleep(1)
+    logging.info("Initiating Setup Wizard")
     #--------------------------------------------------------------------------------------
     pt.panel(size=90,center=False,title="Wingspan Setup Wizard (1/3)", content=["Enter your Panel URL","(e.g. https://panel.example.com)"],border_bold=True,color="cyan")
     panel_url = input("--::>").strip()
@@ -412,6 +427,7 @@ def setup_wizard():
     
     save_config(env)
     banner()
+    logging.info("Setup complete on Setup Wizard")
     pt.panel(size=50,center=True,title="Setup Complete", content=["Setup is complete!","You can now run Wingspan and use its features.","Close this window and run script again"],border_bold=True,color="green")
 
     
@@ -438,44 +454,42 @@ def log_action(level, action, server_id, server_name, before=None, after=None):
 # ---------------------------------------------------------------------------
 # API LAYER
 # ---------------------------------------------------------------------------
-if os.getenv("shipwrightmode")!="True":
-    def api_request(method, endpoint, data=None):
-        """
-        Generic wrapper around urllib for talking to the Pterodactyl API.
-        - method: "GET", "PATCH", "POST", "DELETE"
-        - endpoint: e.g. "/api/application/servers"
-        - config: dict from load_config()
-        - data: dict to send as JSON body (for PATCH/POST)
+def api_request(method, endpoint, data=None):
+    """
+    Generic wrapper around urllib for talking to the Pterodactyl API.
+    - method: "GET", "PATCH", "POST", "DELETE"
+    - endpoint: e.g. "/api/application/servers"
+    - config: dict from load_config()
+    - data: dict to send as JSON body (for PATCH/POST)
 
-        Should set headers:
-            Authorization: Bearer <api_key>
-            Content-Type: application/json
-            Accept: Application/vnd.pterodactyl.v1+json
+    Should set headers:
+        Authorization: Bearer <api_key>
+        Content-Type: application/json
+        Accept: Application/vnd.pterodactyl.v1+json
 
-        Return parsed JSON response (dict), or None on failure.
-        Handle urllib.error.HTTPError / URLError and print a useful message.
-        TODO: implement
-        """
-        logging.info(f"API Request: {method} {endpoint} with data: {data}")
+    Return parsed JSON response (dict), or None on failure.
+    Handle urllib.error.HTTPError / URLError and print a useful message.
+    TODO: implement
+    """
+    logging.info(f"API Request: {method} {endpoint} with data: {data}")
+    req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
+    tries=0
+    while req.status_code==429 and tries<10:
+        tries+=1
+        print(f"Rate Limited.. Trying after {5*tries} Seconds..")
+        logging.warning(f"Rate Limited.. Trying after {5*tries} Seconds..")
+        time.sleep(5*tries)
         req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
-        tries=0
-        while req.status_code==429 and tries<10:
-            tries+=1
-            print(f"Rate Limited.. Trying after {5*tries} Seconds..")
-            logging.warning(f"Rate Limited.. Trying after {5*tries} Seconds..")
-            time.sleep(5*tries)
-            req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
 
-        if str(req.status_code).startswith("2"):
-            return req.json(),req.status_code
-        elif str(req.status_code).startswith("4") or str(req.status_code).startswith("5"):
-            return None,req.status_code
-#else:
-    #def api_request(method, endpoint, data=None):
+    if str(req.status_code).startswith("2"):
+        return req.json(),req.status_code
+    elif str(req.status_code).startswith("4") or str(req.status_code).startswith("5"):
+        return None,req.status_code
+
         
 
 def get_servers(limit=None):
-    
+    logging.info(f"Getting Servers with limit {limit}")
     if limit==None:
         
         page=1
@@ -496,6 +510,7 @@ def get_servers(limit=None):
                     return req.json()
         else:
             print(f"Error while getting servers list at get_servers() : {status}")  
+            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
         
     else:
         data={'per_page': limit}
@@ -510,20 +525,8 @@ def get_server_details(config, server_id):
     pass
 
 
-# ---------------------------------------------------------------------------
-# FILTERING
-# ---------------------------------------------------------------------------
 
-def filter_servers(servers, node=None, status=None, name_pattern=None,
-                    min_ram=None, max_ram=None, owner=None):
-    """
-    Take the full server list and narrow it down based on whichever
-    filters are not None. Support wildcard matching for name_pattern
-    (use fnmatch from stdlib, e.g. "mc-*").
-    Return the filtered list.
-    TODO: implement
-    """
-    pass
+
 
 def flatten_dict(d):
     flat = {}
@@ -693,24 +696,6 @@ def server_selector(stdscr, server_list, headers, all_selected=False):
         
         
         
-def export_csv(servers, filepath):
-    """
-    Write the server list out to a CSV file using the csv module.
-    Useful for --output servers.csv
-    TODO: implement
-    """
-    pass
-
-
-def confirm_action(count, action_description):
-    """
-    Show the user exactly what's about to happen and how many servers
-    are affected. Require them to type something explicit to proceed
-    (e.g. type the number of servers, or type "yes").
-    Return True if confirmed, False otherwise.
-    TODO: implement
-    """
-    pass
 
 
 # ---------------------------------------------------------------------------
@@ -794,13 +779,16 @@ def home_page():
     - Bulk reinstall
     - Exit
     Use input() to get user choice and call the appropriate function."""
-    time.sleep(1)
+
     
     banner(animation=True)
     pt.panel(size=60,center=False,title="HomePage [/]", content=["1. Search and Info","2. Purge","3. Power Actions","4. Suspension Manager", "5. Bulk Resource Change","6. Bulk Reinstall","S. Run Setup Again","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-
-    home_inp = input("--::> ")
-    
+    try:
+        home_inp = input("--::> ")
+    except KeyboardInterrupt as e:
+        exit()
+        
+    #if home==
 
     while True:
         
@@ -829,7 +817,7 @@ def home_page():
             if inp=="1":
                 purge_srv()
                 #break
-            if inp=="2":
+            elif inp=="2":
                 purge_users()
                 #break
             elif inp.lower()=="h":
@@ -1240,8 +1228,8 @@ def search_server():
         print(f"{Fore.RED}No servers matched the given filters.")
     else:
         banner()
-        print(f"{Fore.GREEN}Matched {len(servers_filtering_list)} / {total_servers} server(s).{Fore.RESET}\nPlease select the servers you want to export from the next menu.")
-        input("Press Enter to continue...")
+#        print(f"{Fore.GREEN}Matched {len(servers_filtering_list)} / {total_servers} server(s).{Fore.RESET}\nPlease select the servers you want to export from the next menu.")
+#        input("Press Enter to continue...")
         
         selected_rows = curses.wrapper(
             server_selector,
@@ -1252,6 +1240,7 @@ def search_server():
         
         if selected_rows is None:
             print(f"{Fore.RED}No servers selected for export.")
+            time.sleep(2)
             return
         
         servers_filtering_list=[]
@@ -1265,6 +1254,9 @@ def search_server():
             if inp.lower() in ("y","yes"):
                 pt.panel(size=70,center=False,title=f"/search-and-info/info/export", content=[f"Please enter a name for your export.",f"{Fore.GREEN}Enter this name to Re-Import this list in a function!{Fore.RESET}","You can access the export file in the exports folder","in this file's root dir, unless you enter a complete path."],border_bold=True,color="cyan")
                 export_name=input("--::> ").strip()
+                if export_name=="":
+                    export_name="export.csv"
+                
                 if "\\" in export_name or "/" in export_name:
                 
                     pass
@@ -1287,15 +1279,13 @@ def search_server():
                 continue
 
 def export_list(HEAD,servers,filepath):
-    filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+    filepath = os.path.join(PROJECT_ROOT, filepath)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(HEAD)
         for srv in servers:
-            a = srv
-            print(a)
-            writer.writerow(a)
+            writer.writerow(srv)
             
 def server_info():
     # This function has a lot of AI use because it involves very complex GUI and formatting, which is not achievable by hand.
@@ -2568,8 +2558,10 @@ def server_info():
         print(f"Enter the numerical {Fore.GREEN}Server ID{Fore.RESET} to get all related information. Enter {Fore.GREEN}'h'{Fore.RESET} to return to homepage")
 
 def purge_srv():
-    pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
-    time.sleep(5)
+    banner()
+    pt.panel(size=70, center=False, title=f"/purge/server-purge/import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,",f"{Style.DIM}Please pass blank input to open Search and Info.",""],border_bold=True,color="red")
+    inp1=input("--::> ")
+
 def purge_users():
     pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
     time.sleep(5)
@@ -2664,7 +2656,7 @@ def main():
     
     
     if args.command is None:
-        print("Booting in Interactive mode..")
+        #print("Booting in Interactive mode..")
         power_on_self_test()
 #        load_config()
         init_logger()
@@ -2676,36 +2668,9 @@ def main():
         if args.command == "setup":
             setup_wizard()
             return
-        power_on_self_test()
-        # Initialize environment
-#        load_config()
-        init_logger()
-
-        # Gather data context
-        servers = get_servers()
-        filtered_servers = filter_servers(servers, args)
-
-        # Dispatch commands
-        if args.command == "list":
-#            if args.output == "csv":
-            export_csv(filtered_servers, "export.csv")
-#            else:
-
-
-        elif args.command == "resize":
-            bulk_resize(filtered_servers, args.ram, args.cpu, args.disk, args.dry_run, args.yes)
-
-        elif args.command == "power":
-            bulk_power(filtered_servers, args.action, args.dry_run, args.yes)
-
-        elif args.command == "suspend":
-            bulk_suspend(filtered_servers, args.undo, args.dry_run, args.yes)
-
-        elif args.command == "purge":
-            bulk_purge(filtered_servers, args.manifest, args.dry_run, args.yes)
-
-        elif args.command == "reinstall":
-            bulk_reinstall(filtered_servers, args.dry_run, args.yes)
+        else:
+            print("Wrong Args Passed. Please check documentation.")
+            exit()
 
 
 if __name__ == "__main__":

@@ -105,7 +105,7 @@ Note: The project makes its own venv on boot, and also installs its own dependen
          Make your panel faster by removing accounts which no longer have any servers attached with them. This function excludes admin accounts.
 
 ## Bulk Transfer
-        This function takes in the destination node and presents server selector by the Server Search function. Servers could be transferred all at once, or one by one. Allottments and resources are automatically allotted by pterodactyl.
+        This function takes in the destination node and presents server selector by the Server Search function. Servers could be transferred all at once, or one by one. Allotments and resources are automatically allotted by pterodactyl.
 
 
 

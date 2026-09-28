@@ -26,6 +26,7 @@ In reality, a server setup would have hundreds of servers, my own instance has m
 
 
 3. **After selecting Option 1:**
+
     ![Search and info menu](Media/image2.png)
     1) **Search Server :** Allows you to use big list of parameters to filter and export a list of filtered servers. Parameters are fetched from API from panel, so if in future a new parameter is added, this code would not need to be changed, it works accordingly. 
 
