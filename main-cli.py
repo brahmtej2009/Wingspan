@@ -306,12 +306,7 @@ def power_on_self_test():
         time.sleep(3)
         setup_wizard()
     #----Configs----
-#    if os.path.exists(CONFIG_PATH):
-#        logging.info("Config file found.")
-#    else:
-#        logging.critical(f"Config file not found. Please run 'setup' to create a config file.")
-#        print(f"Error: Config file not found. Please run 'setup' to create a config file.")
-#        exit(1)
+#   --- Removed ---
     #----Storage----
     if os.path.exists(LOG_PATH):
         logging.info("Log file found.")
@@ -319,19 +314,10 @@ def power_on_self_test():
         logging.info("Created Logfile")
     
     logging.info("Wingspan Power-On Self Test completed successfully.")
-  
-"""
-def load_config():
 
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
-    return config
-"""
 
 def save_config(config):
-    """
-    Overwrite the config.json file with the provided config dict. Save as Json
-    """
+
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=4)
     logging.info("Config file saved successfully.")
@@ -429,7 +415,12 @@ def setup_wizard():
     banner()
     logging.info("Setup complete on Setup Wizard")
     pt.panel(size=50,center=True,title="Setup Complete", content=["Setup is complete!","You can now run Wingspan and use its features.","Close this window and run script again"],border_bold=True,color="green")
-
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+    global HEADERS
+    HEADERS = {
+    'Authorization': f'Bearer {os.getenv("api_key")}',
+    'Accept': 'Application/vnd.pterodactyl.v1+json'
+    }
     
 # ---------------------------------------------------------------------------
 # LOGGING
@@ -448,8 +439,6 @@ def log_action(level, action, server_id, server_name, before=None, after=None):
         logtext+=f" After: {after}."
         
     level(logtext)
-
-
 
 # ---------------------------------------------------------------------------
 # API LAYER
@@ -540,11 +529,6 @@ def flatten_dict(d):
 # ---------------------------------------------------------------------------
 # OUTPUT / DISPLAY
 # ---------------------------------------------------------------------------
-
-
-
-
-
 
 def server_selector(stdscr, server_list, headers, all_selected=False):
     ANSI_RE = re.compile(r'\x1b\[([0-9;]*)m')
@@ -810,31 +794,114 @@ def home_page():
                 time.sleep(5)
                 continue
         
-        if home_inp=="2":
-            banner()
-            pt.panel(size=60,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers]","2. Purge Users [Permanently Delete Users]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-            inp=input("--::> ").strip()
-            if inp=="1":
-                purge_srv()
-                #break
-            elif inp=="2":
-                purge_users()
-                #break
-            elif inp.lower()=="h":
-                home_page()
-                break
-            else:
-                print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                time.sleep(5)
-                continue
+        # elif home_inp=="2":
+        #     banner()
+        #     pt.panel(size=60,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers]","2. Purge Users [Permanently Delete Users]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
+        #     inp=input("--::> ").strip()
+        #     if inp=="1":
+        #         purge_srv()
+        #         #break
+        #     elif inp=="2":
+        #         purge_users()
+        #         #break
+        #     elif inp.lower()=="h":
+        #         home_page()
+        #         break
+
+        #     else:
+        #         print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+        #         time.sleep(5)
+        #         continue
+                
+        elif home_inp.lower()=="s":
+            setup_wizard()
             
-        elif home_inp in ["3","4","5","6"]:
+            
+        elif home_inp in ["2","3","4","5","6"]:
             banner()
             pt.panel(size=60,center=False,title="HomePage [/coming-soon/]", content=["This feature is coming soon!","Please check back later."],border_bold=True,color="cyan", center_content=False)
             time.sleep(5)
             
         home_page()
-        
+
+def get_importlist(inp1=None,function="/", retry=True,verify=True):
+    
+    logging.debug("Fetching import list from user input.")
+    while True:
+        if inp1 == None:
+            banner()
+            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,",f"{Style.DIM}Please pass blank input to open Search and Info.",f"{Style.DIM}Enter h to go to the homepage"],border_bold=True,color="red")
+            inp1=input("--::> ")
+            if inp1=="":
+                banner()
+                pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}You have chosen to open {Fore.RED}Search and Info{Fore.CYAN}.", f"{Style.DIM}Please use the search feature to find servers and export them to a file.",f"{Style.DIM}Once you have exported a file, you can import it here."],border_bold=True,color="red")
+                search_server()
+        elif inp1.lower()=="h":
+            home_page()
+        else:
+            if not (inp1.endswith(".csv") or inp1.endswith(".txt")):
+                try:
+                    
+                    # CASE 1 with testing with CSV Extension
+                    
+                    path=inp1+".csv"
+                    
+                    with open(path,"r") as s: #Open as CSV
+                        content=list(csv.reader(s))
+                        
+                        
+                        # Check if file belongs to same panel
+                        if content[0][0]==os.getenv("panel_url") and verify: 
+                            logging.info(f"Import file with path {inp1} found in csv.")
+                            return list(content[1:])
+                        
+                        
+                        if content[0][0]!=os.getenv("panel_url") and verify and content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
+                            pt.panel(size=70,center=False,title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.",f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"],border_bold=True,color="red")
+                            inp=input("--::> ")
+                            if inp.lower()=="y":
+                                return list(content[1:])
+                            else:
+                                return None
+                            
+                        if retry:
+                            inp1=None
+                        else:
+                            return None
+                        if content[0][0]!=os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
+                except FileNotFoundError:
+                    try:
+                        path=inp1+".txt"
+                        with open(path,"r") as s:
+                            content=list(csv.reader(s))
+                            if content[0][0]==os.getenv("panel_url") and verify:
+                                logging.info(f"Import file with path {inp1} found in txt.")
+                                return list(content[:-1])
+                    except FileNotFoundError:
+                        pt.panel(size=70,center=False,title=f"/purge/server-purge/import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."],border_bold=True,color="red")
+                        logging.error(f"Import file with path {inp1} not found in both txt and csv.")
+                        time.sleep(5)
+                        if retry:
+                            inp1=None
+                        else:
+                            return None
+            else:
+                try:
+                    with open(inp1,"r") as s:
+                        content=list(csv.reader(s))
+                        if content[0][0]==os.getenv("panel_url") and verify:
+                            logging.info(f"Import file with path {inp1} found.")
+                            return list(content[:-1])
+                except FileNotFoundError:
+                    pt.panel(size=70,center=False,title=f"/purge/server-purge/import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."],border_bold=True,color="red")
+                    logging.error(f"Import file with path {inp1} not found") 
+                    time.sleep(5)
+                    if retry:
+                        inp1=None
+                    else:
+                        return None 
 def search_server():
     server_list=get_servers()
     try:
@@ -2556,12 +2623,15 @@ def server_info():
 
         banner()
         print(f"Enter the numerical {Fore.GREEN}Server ID{Fore.RESET} to get all related information. Enter {Fore.GREEN}'h'{Fore.RESET} to return to homepage")
-
 def purge_srv():
-    banner()
-    pt.panel(size=70, center=False, title=f"/purge/server-purge/import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,",f"{Style.DIM}Please pass blank input to open Search and Info.",""],border_bold=True,color="red")
-    inp1=input("--::> ")
-
+    importlist=get_importlist(function="/purge/server-purge/", retry=True)
+    print(importlist)
+    for i in importlist:
+        print(i)
+    time.sleep(10)
+    
+    
+    
 def purge_users():
     pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
     time.sleep(5)

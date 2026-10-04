@@ -29,10 +29,10 @@ Are you a shipright? Check out the shipwrights.md <3
 
 ---
 
-# Why not Packed?
-This project is not packed, so you could use the same python script over at Linux and Windows both, the project's code is made to be compatible with both the platforms. This way, you could transfer files from one system to another without needing to change the main code file. Also, for updates, you could just change the py file, and you're done!
+### Install Release for both Linux and Windows
+Wingspan well supports both Windows and Linux. To download and run, please visit the [release page](https://github.com/brahmtej2009/Wingspan/releases/tag/V1-Release01). The app installs its own required dependencies and performs self-update. The app runs a guided setup when you boot it for the first time! I hope you have a great time with Wingspan!
 
----
+
 
 # What was the Problem, What I fixed (Project Info)
 Pterodactyl is a really famous server management tool, but for hosting owners who have more than a hundred servers, managing each of those individually takes a lot of effort. Making a bulk manager tool was really essential, because it allows admins to perform actions in massive quantities, automatically, saving a lot of time and hard work on repeated work. Actions such as transfers required us to transfer each server one by one and had no automation, with wingspan, you could select the servers to transfer, it manages everything as you set. Not just limited to transfers, it can also bulk search servers, perform server purge functions, take bulk backups, perform bulk resize, reinstalls, updates and more.
@@ -41,6 +41,7 @@ Pterodactyl is a really famous server management tool, but for hosting owners wh
 ---
 
 # Features
+- Server Search
 - Bulk Suspend/Unsuspend
 - Selective Purge 
 - Backup download
@@ -54,7 +55,7 @@ Pterodactyl is a really famous server management tool, but for hosting owners wh
 
 ---
 
-# Installation
+# Installation From Source Files
 
 To install, ensure you have Python 3.12 or neighboring versions installed.
 
@@ -72,11 +73,10 @@ Note: The project makes its own venv on boot, and also installs its own dependen
 ### 1. Clone the repo
 ```git clone https://github.com/brahmtej2009/wingspan```
 
-### 2. Run Wingspan Setup mode
-```python3 main-cli.py setup```
-
-### 3. Run again to boot to main mode
+### 2. Run to boot to Setup
 ```python3 main-cli.py```
+
+Would boot into main dashboard after setup everytime!
 
 ---
 
@@ -84,33 +84,36 @@ Note: The project makes its own venv on boot, and also installs its own dependen
 
 ## Homepage
 ## 1. Search and Info
-- **1. Server Search**: 
+- > **1. Server Search**: 
     
-        Allows you to enter ranges for values of parameters to search and filter servers, then export them to csv or take action on those selected servers.
-- **2. Server Info**: 
+        Allows you to enter ranges for values of parameters to search and filter servers, then export them to csv or take action on those selected servers. This function is used to export an importlist, which is used in other functions.
+- > **2. Server Info**: 
         
         Allows you to enter a single server ID (Numeric) to fetch all information of it on a single page with good formatting.
+
 ## 2. Purge Bot
 
-#### 1. Server Purge
-- **1. Name Based Purge**: 
+- > **1. Server  Purge**: 
 
-        Simple everyday purge, where a keyword must be present in the server name to make it survive, else would be deleted. For data safety reasons, we dont keep it case sensitive, that means if purge protection word is "Prot", then servers with "prot"/"PrOt"/"pROT" (etc.) in name would be protected too.
-- **2. Advanced Purge**: 
+        Simple everyday purge, where a keyword must be present in the server name to make it survive, else would be deleted. For data safety reasons, we dont keep it case sensitive, that means if purge protection word is "Prot", then servers with "prot"/"PrOt"/"pROT" (etc.) in name would be protected too. 
+- > **2. User Purge**: 
         
-         It first runs the Server Search function, where you use specific ranges and parameter values to filter servers, and then allows you to precisely delete servers in bulk.
-#### 2. User Purge
-- **1. Empty Account Removal**: 
-        
-         Make your panel faster by removing accounts which no longer have any servers attached with them. This function excludes admin accounts.
+      User based purge, gives ability to delete users who dont have a server, or specific deletion by providing an importlist..
 
-## Bulk Transfer
-        This function takes in the destination node and presents server selector by the Server Search function. Servers could be transferred all at once, or one by one. Allotments and resources are automatically allotted by pterodactyl.
+## 3. Power Actions
+    > This function allows you to bulk start, stop, and kill servers by providing an importlist.
+## 4. Suspension Manager
+    > This function allows you to Suspend and Unsuspend servers by providing an importlist. Servers which are suspended are stopped immediately.
+## 5. Bulk Resource Change
+    > This function allows you to run commands to change multiple parameters of your servers in bulk, all at once by providing an importlist.
 
-
+## 6. Bulk Reinstall
+    > Allows you to re-trigger the installation script for all servers in a given importlist.
+## S. Run Setup Again
+    > Allows you to launch the setup menu again to re-link the same pterodactyl or link a new pterodactyl. Keep in mind that if the panel is re linked, old importlists may not work the same way, and may effect different servers, which may not be suitable.
 
 # Contributing
-The project is driven by community support only, your efforts would mean a LOT to this project and to all its users. For any suggestions, issues, bugs, please feel free to contribute to this project by either informing me, raising a github issue ticket, or adding a PR with the required changes performed. Also, I'l love to have you work with our core team for this project's development, Contact me! [Details in Bio]
+The project is driven by community support only, your efforts would mean a LOT to this project and to all its users. For any suggestions, issues, bugs, please feel free to contribute to this project by either informing me, raising a github issue ticket, or adding a PR with the required changes performed. 
 
 ---
 

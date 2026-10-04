@@ -1,16 +1,16 @@
 ![Banner](Media/Banner.png)
 
 # Hello Shipwrights/Voters!
+
+### Go to Release --> [HERE](https://github.com/brahmtej2009/Wingspan/releases/tag/V1-Release01)
+
 Welcome to my project, it is an infrastructure management project, which helps you manage servers if you own/manage a server hosting or a pterodactyl panel.
 
 As you are most likely not having physical servers or pterodactyl panel installation, I have given a demo pterodactyl api key in the README which you could use to test this. If you are reviewing this, and see me online, just drop a message and i'll guide you through the entire testing, as it could get confusing, If not, you can follow the documentation below.
 
-
-The code is not built into an exe, because its meant to be a universal file, which you could clone and run anywhere. The script downloads its dependencies by itself upon first setup, so it would work on any system, and any OS, with a single file.
-
 # Getting Started
 
-Follow the readme doc for getting started.
+Download the release file from the link above for your OS. On running it for the first time, It may take a few minutes to set up wingspan in your system. After its done, it would start a guided setup, please use that with the demo information provided at [README.MD](https://github.com/brahmtej2009/Wingspan/blob/main/README.md)
 
 > **The API Key:** You need an API key to use this software. A demo key has been created by me, and is in the Readme. Please use that key while setup along with the url and other detailed provided there. 
 
@@ -40,4 +40,4 @@ In reality, a server setup would have hundreds of servers, my own instance has m
 
 4. **Other features :** I consider this project as about 40% done, even though only 1 out of 6 functions are made. This is because there is a lot of shared code and most of the things here are API based. The API system is complete, and only translating the user needs to API requests is left for the remaining functions. The project size is in the medium-big category. Also, the project has a guided setup menu (Accessed by S at the home page), which guides users how to set up the pterodactyl API Key.
 
-# Thankyou Shipwrights for testing my project 💝
+# Thankyou for testing my project 💝
