@@ -20,22 +20,19 @@
                                    V
 ```
 
-### Welcome to Wingspan, Server Management and Automation for Pterodactyl!
+
 
 **Project submitted to Submitted to [Stardance, Hack Club](https://stardance.hackclub.com)**
 
-Are you a shipright? Check out the shipwrights.md <3
+### [Hack Club Show and Tell](https://events.hackclub.com/stardance-show--tell/) #1 Winner! 🥇 🏆
 
 
----
-
-### Install Release for both Linux and Windows
-Wingspan well supports both Windows and Linux. To download and run, please visit the [release page](https://github.com/brahmtej2009/Wingspan/releases/tag/V1-Release01). The app installs its own required dependencies and performs self-update. The app runs a guided setup when you boot it for the first time! I hope you have a great time with Wingspan!
-
-
+# Welcome to Wingspan, Server Management and Automation for Pterodactyl!
 
 # What was the Problem, What I fixed (Project Info)
 Pterodactyl is a really famous server management tool, but for hosting owners who have more than a hundred servers, managing each of those individually takes a lot of effort. Making a bulk manager tool was really essential, because it allows admins to perform actions in massive quantities, automatically, saving a lot of time and hard work on repeated work. Actions such as transfers required us to transfer each server one by one and had no automation, with wingspan, you could select the servers to transfer, it manages everything as you set. Not just limited to transfers, it can also bulk search servers, perform server purge functions, take bulk backups, perform bulk resize, reinstalls, updates and more.
+
+
 
 
 ---
@@ -55,6 +52,11 @@ Pterodactyl is a really famous server management tool, but for hosting owners wh
 
 ---
 
+
+# Install Release for Linux / Windows
+Wingspan well supports both Windows and Linux. To download and run, please visit the [release page](https://github.com/brahmtej2009/Wingspan/releases/tag/V1-Release01). The app installs its own required dependencies and performs self-update. The app runs a guided setup when you boot it for the first time! I hope you have a great time with Wingspan!
+
+---
 # Installation From Source Files
 
 To install, ensure you have Python 3.12 or neighboring versions installed.

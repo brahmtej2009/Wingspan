@@ -14,138 +14,96 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>."""
 
+# ---------- Auto Dependencies Check and Install ------------
 
-
-
-
-
-# This is wingspan, Il be writing my targets and scopes for this project first.
-
-# I realized that pterodactyl doesnt have purge options, or bulk server actions and all. I am making that.
-
-# I will use ptero api, to connect with user's panel and task/schedule actions.
-
-# Il make 2 versions, one for linux and one for windows. Only windows one would have GUI. I need to find a way to keep both in sync.
-
-# Features planned:
-# Bulk Suspend/Unsuspend (A Checkbox to select multiple servers and suspend them all at once)
-# Bulk Delete (A Checkbox to select multiple servers and delete them all at once)
-# Selective Purge (Deletes the servers which match scopes provided, + Dry run feature)
-# Backup download (Download backups of selected servers)
-# Bulk resource change, or Copy 1 server's resources and paste to multiple servers.
-# Bulk Reinstall
-# Bulk Transfer (Transfer multiple servers to another node, but does it one by one due to bandwidth limitations)
-# Settings page for storing api keys and more.
-# Email notifications to notify users for bulk actions if scheduled.
-# Make a management tab in which all node's real specs (not just assigned specs, real specs) are shown, and heavy overloading or other parameter of servers are shown.
-# Il take suggestions from UI of Proxmox and Proxmox Datacenter manager as thats a really good UI with a lot of pterodactyl usable features.
-# User management features like Bulk Email, Bulk user delete, Specific User Purge (Like delete those without any server), User Clear (Clear all servers of a user)
-# The complete flagship feature of panel speed booster, which does all required purges and makes panel faster
-# Update monitor, so users can safely and reliably update their wingspan installation and get prompted whenever a new release is put.
-
-# Features for future:
-# Wings install: Add a panel's api key + ssh credentials of a fresh vps, and it installs and sets up wings and sets up node.
-# DB Setup: Same as wings install, add the cred and it makes mysql db through ssh and sets it up on panel automatically.
-# Server side Wingspan (A version that runs on your pterodactyl panel which connects with your windows/linux sessions to execute scheduled actions in future)
-# Essentially add Ai capabilities in future to automate pterodactyl actions even more.
-
-
-# Basic Settings / Imports
-
-
-#----------Auto Dependencies Check and Install------------
 import os
 import sys
 import subprocess
 import hashlib
 
+
 def banner(animation=False, stars=False, clear=True):
     if clear:
         os.system('cls' if os.name == 'nt' else 'clear')
     try:
-            sys.stdout.write("\033[?25l")
-            sys.stdout.flush()
+        sys.stdout.write("\033[?25l")
+        sys.stdout.flush()
 
-            RESET   = "\033[0m"
-            DIM     = "\033[2m"
-            RIGGING = "\033[38;5;251m"
-            STAR    = "\033[93m"
-            STAR_DIM= "\033[38;5;58m"
-            HULL    = "\033[38;5;180m"
-            WATER   = "\033[36m"
-            WAVE    = "\033[38;5;24m"
-            GRAD = ["\033[38;5;51m", "\033[38;5;45m", "\033[38;5;39m",
-                    "\033[38;5;33m", "\033[38;5;27m"]
+        RESET = "\033[0m"
+        
+        RIGGING = "\033[38;5;251m"
+        STAR = "\033[93m"
+        STAR_DIM = "\033[38;5;58m"
+        HULL = "\033[38;5;180m"
+        WATER = "\033[36m"
+        WAVE = "\033[38;5;24m"
+        GRAD = ["\033[38;5;51m", "\033[38;5;45m", "\033[38;5;39m",
+                "\033[38;5;33m", "\033[38;5;27m"]
 
-            raw_lines = [
-                "                          )       \\   /      (",
-                "                         /|\\      )\\_/(     /|\\ ",   # <- fixed: trailing space
-                "*                       / | \\    (/\\|/\\)   / | \\                      *",
-                "|`.____________________/__|__o____\\`|'/___o__|__\\____________________.'|",
-                "|                           '^`    \\|/   '^`                           |",
-                "|                                   V                                  |",
-                "|                                                                      |",
-                "|     /|   _       _______   _____________ ____  ___    _   __  |\\     |",
-                "|    //|  | |     / /  _/ | / / ____/ ___// __ \\/   |  / | / /  |\\\\    |",
-                "|   ///|  | | /| / // //  |/ / / __ \\__ \\/ /_/ / /| | /  |/ /   |\\\\\\   |",
-                "|  ////|  | |/ |/ // // /|  / /_/ /___/ / ____/ ___ |/ /|  /    |\\\\\\\\  |",
-                "| /////|  |__/|__/___/_/ |_/\\____//____/_/   /_/  |_/_/ |_/     |\\\\\\\\\\ |",
-                "| .__________________________________________________________________. |",
-                "|'               l    /\\ /     \\\\            \\ /\\   l                 `|",
-                "*                l  /   V       ))            V   \\ l                  *",
-                "                 l/            //                  \\I",
-                "                               V",
-                
-            ]
+        raw_lines = [
+            "                          )       \\   /      (",
+            "                         /|\\      )\\_/(     /|\\ ",
+            "*                       / | \\    (/\\|/\\)   / | \\                      *",
+            "|`.____________________/__|__o____\\`|'/___o__|__\\____________________.'|",
+            "|                           '^`    \\|/   '^`                           |",
+            "|                                   V                                  |",
+            "|                                                                      |",
+            "|     /|   _       _______   _____________ ____  ___    _   __  |\\     |",
+            "|    //|  | |     / /  _/ | / / ____/ ___// __ \\/   |  / | / /  |\\\\    |",
+            "|   ///|  | | /| / // //  |/ / / __ \\__ \\/ /_/ / /| | /  |/ /   |\\\\\\   |",
+            "|  ////|  | |/ |/ // // /|  / /_/ /___/ / ____/ ___ |/ /|  /    |\\\\\\\\  |",
+            "| /////|  |__/|__/___/_/ |_/\\____//____/_/   /_/  |_/_/ |_/     |\\\\\\\\\\ |",
+            "| .__________________________________________________________________. |",
+            "|'               l    /\\ /     \\\\            \\ /\\   l                 `|",
+            "*                l  /   V       ))            V   \\ l                  *",
+            "                 l/            //                  \\I",
+            "                               V"]
 
-            colored_lines = [
-                RIGGING + raw_lines[0] + RESET,
-                RIGGING + raw_lines[1] + RESET,
-                STAR + "*" + RIGGING + raw_lines[2][1:-1] + STAR + "*" + RESET,
-                HULL + raw_lines[3] + RESET,
-                HULL + raw_lines[4] + RESET,
-                WATER + raw_lines[5] + RESET,
-                raw_lines[6],
-                GRAD[0] + raw_lines[7] + RESET,
-                GRAD[1] + raw_lines[8] + RESET,
-                GRAD[2] + raw_lines[9] + RESET,
-                GRAD[3] + raw_lines[10] + RESET,
-                GRAD[4] + raw_lines[11] + RESET,
-                HULL + raw_lines[12] + RESET,
-                WAVE + raw_lines[13] + RESET,
-                STAR + "*" + WAVE + raw_lines[14][1:-1] + STAR + "*" + RESET,
-                WAVE + raw_lines[15] + RESET,
-                WAVE + raw_lines[16] + RESET,
-            ]
+        colored_lines = [
+            RIGGING + raw_lines[0] + RESET,
+            RIGGING + raw_lines[1] + RESET,
+            STAR + "*" + RIGGING + raw_lines[2][1:-1] + STAR + "*" + RESET,
+            HULL + raw_lines[3] + RESET,
+            HULL + raw_lines[4] + RESET,
+            WATER + raw_lines[5] + RESET,
+            raw_lines[6],
+            GRAD[0] + raw_lines[7] + RESET,
+            GRAD[1] + raw_lines[8] + RESET,
+            GRAD[2] + raw_lines[9] + RESET,
+            GRAD[3] + raw_lines[10] + RESET,
+            GRAD[4] + raw_lines[11] + RESET,
+            HULL + raw_lines[12] + RESET,
+            WAVE + raw_lines[13] + RESET,
+            STAR + "*" + WAVE + raw_lines[14][1:-1] + STAR + "*" + RESET,
+            WAVE + raw_lines[15] + RESET,
+            WAVE + raw_lines[16] + RESET,
+        ]
 
-            plain_width = max(len(l) for l in raw_lines)
-            columns = os.get_terminal_size().columns
-            padding = max((columns - plain_width) // 2, 0)
-            pad_str = " " * padding
+        plain_width = max(len(l) for l in raw_lines)
+        columns = os.get_terminal_size().columns
+        padding = max((columns - plain_width) // 2, 0)
+        pad_str = " " * padding
 
-            if stars:
-                star_field = [" " * plain_width for _ in range(2)]  # blank rows above ship
-                for _ in range(24):
-                    frame = ""
-                    for _ in range(8):
-                        chars = [" "] * plain_width
-                        for _ in range(random.randint(1, 3)):
-                            pos = random.randint(0, plain_width - 1)
-                            chars[pos] = random.choice([STAR, STAR_DIM]) + "." + RESET
-                        frame += pad_str + "".join(chars) + "\n"
-                    sys.stdout.write(frame)
-                    sys.stdout.flush()
-                    time.sleep(0.08)
-                    sys.stdout.write(f"\033[{8}A\033[J")  # move up & clear for next frame
-
-
-            for line in colored_lines:
-                sys.stdout.write(pad_str + line + "\n")
+        if stars: 
+            for _ in range(24):
+                frame = ""
+                for _ in range(8):
+                    chars = [" "] * plain_width
+                    for _ in range(random.randint(1, 3)):
+                        pos = random.randint(0, plain_width - 1)
+                        chars[pos] = random.choice([STAR, STAR_DIM]) + "." + RESET
+                    frame += pad_str + "".join(chars) + "\n"
+                sys.stdout.write(frame)
                 sys.stdout.flush()
-                if animation:
-                    time.sleep(0.05)
-            print()            
-            # ASCII ART CREDITS TO Alan Greep
+                time.sleep(0.08)
+                sys.stdout.write(f"\033[{8}A\033[J")  # move up & clear for next frame
+        for line in colored_lines:
+            sys.stdout.write(pad_str + line + "\n")
+            sys.stdout.flush()
+            if animation:
+                time.sleep(0.05)
+        print()            
+        # ASCII ART CREDITS TO Alan Greep
     finally:
         sys.stdout.write("\033[?25h")
         sys.stdout.flush()
@@ -234,7 +192,7 @@ def _bootstrap():
     if IS_WINDOWS:
 
         print("Starting Up...")
-        curses=subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
+        subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
         result = subprocess.run([venv_python, os.path.abspath(__file__)] + sys.argv[1:])
         
         sys.exit(result.returncode)
@@ -267,7 +225,7 @@ _enable_ansi_on_windows()
 #--------------------------Imports--------------------------
 
 import logging
-import time, json, requests, threading, datetime,random,argparse,venv,curses,re,fnmatch,csv
+import time, json, requests, datetime,random,argparse,curses,re,fnmatch,csv
 from dotenv import load_dotenv
 from pytterns import Pytterns
 from colorama import Fore,Style, Back
@@ -281,7 +239,6 @@ load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 # CONFIG
 # ---------------------------------------------------------------------------
 
-CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 LOG_PATH = os.path.join(PROJECT_ROOT, "wingspan.log")
 ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
 
@@ -289,6 +246,14 @@ HEADERS = {
     'Authorization': f'Bearer {os.getenv("api_key")}',
     'Accept': 'Application/vnd.pterodactyl.v1+json'
 }
+
+#--------------------------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Setup Wizard
+# ---------------------------------------------------------------------------
+
 
 def power_on_self_test():
     """
@@ -301,8 +266,8 @@ def power_on_self_test():
     if os.path.exists(ENV_PATH):
         logging.info("Environment file found.")
     else:
-        logging.critical(f"Environment file not found. Taking you to the setup wizard.")
-        print(f"Environment file not found. Taking you to the setup wizard.")
+        logging.critical("Environment file not found. Taking you to the setup wizard.")
+        print("Environment file not found. Taking you to the setup wizard.")
         time.sleep(3)
         setup_wizard()
     #----Configs----
@@ -314,19 +279,6 @@ def power_on_self_test():
         logging.info("Created Logfile")
     
     logging.info("Wingspan Power-On Self Test completed successfully.")
-
-
-def save_config(config):
-
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=4)
-    logging.info("Config file saved successfully.")
-
-
-#--------------------------------------------------------------------------------------------
-
-
-
 
 def setup_wizard():
     """
@@ -409,9 +361,7 @@ def setup_wizard():
             env_file.write(f"{key}={value}\n")
             
     
-    logging.info("Config file saved successfully.")
-    
-    save_config(env)
+    logging.info("ENV file saved successfully.")
     banner()
     logging.info("Setup complete on Setup Wizard")
     pt.panel(size=50,center=True,title="Setup Complete", content=["Setup is complete!","You can now run Wingspan and use its features.","Close this window and run script again"],border_bold=True,color="green")
@@ -429,7 +379,7 @@ def setup_wizard():
 def init_logger():
     
     logging.basicConfig(filename=LOG_PATH, level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    logger=logging.getLogger(__name__)
+    logging.getLogger(__name__)
 
 def log_action(level, action, server_id, server_name, before=None, after=None):
     logtext=f"Action: {action} was performed for server {server_name} ({server_id})."
@@ -475,8 +425,6 @@ def api_request(method, endpoint, data=None):
     elif str(req.status_code).startswith("4") or str(req.status_code).startswith("5"):
         return None,req.status_code
 
-        
-
 def get_servers(limit=None):
     logging.info(f"Getting Servers with limit {limit}")
     if limit==None:
@@ -504,18 +452,6 @@ def get_servers(limit=None):
     else:
         data={'per_page': limit}
         api_request("GET", "/api/application/servers", data=data)
-
-def get_server_details(config, server_id):
-    """
-    Fetch full detail for a single server by ID.
-    Useful before showing a "before" value in dry-run mode.
-    TODO: implement
-    """
-    pass
-
-
-
-
 
 def flatten_dict(d):
     flat = {}
@@ -677,76 +613,7 @@ def server_selector(stdscr, server_list, headers, all_selected=False):
             return [strip_row(server_list[i]) for i in sorted(checked)]
         elif key in (ord("q"), ord("Q")):
             return None
-        
-        
-        
 
-
-# ---------------------------------------------------------------------------
-# BULK ACTIONS
-# ---------------------------------------------------------------------------
-
-def bulk_resize(config, servers, ram=None, cpu=None, disk=None, swap=None,
-                 dry_run=True):
-    """
-    Update resource limits on every server in `servers`.
-    - Show a preview (old -> new) for each server first.
-    - If dry_run is True, stop after the preview.
-    - If not dry_run, call confirm_action(), then PATCH each server
-      and log_action() the result.
-    TODO: implement
-    """
-    pass
-
-
-def bulk_power_action(config, servers, action, dry_run=True):
-    """
-    action is one of: "start", "stop", "restart", "kill"
-    Send the power signal to every server in the filtered list.
-    Same dry_run / confirm / log pattern as bulk_resize.
-    TODO: implement
-    """
-    pass
-
-
-def bulk_suspend(config, servers, suspend=True, dry_run=True):
-    """
-    Suspend (True) or unsuspend (False) every server in the list.
-    Same dry_run / confirm / log pattern.
-    TODO: implement
-    """
-    pass
-
-def bulk_power(config, servers, action, dry_run=True):
-    """
-    Perform power actions (start, stop, restart, kill) on every server in the list.
-    Same dry_run / confirm / log pattern.
-    TODO: implement
-    """
-    pass
-
-def bulk_purge(config, servers, dry_run=True, export_manifest_path=None):
-    """
-    THE DANGEROUS ONE.
-    - Always show the full list of servers that will be deleted first.
-    - If export_manifest_path is set, write server configs (name, egg,
-      resources, owner) to that file BEFORE deleting anything.
-    - If dry_run is True, stop after the preview - do not delete.
-    - Require an extra-strict confirm_action() (e.g. typing the exact
-      number of servers to delete, not just "yes").
-    - DELETE each server via api_request(), log_action() each one.
-    TODO: implement
-    """
-    pass
-
-
-def bulk_reinstall(config, servers, dry_run=True):
-    """
-    Trigger a reinstall on every server in the list.
-    Same dry_run / confirm / log pattern.
-    TODO: implement
-    """
-    pass
 
 # ---------------------------------------------------------------------------
 # Terminal UI
@@ -769,7 +636,7 @@ def home_page():
     pt.panel(size=60,center=False,title="HomePage [/]", content=["1. Search and Info","2. Purge","3. Power Actions","4. Suspension Manager", "5. Bulk Resource Change","6. Bulk Reinstall","S. Run Setup Again","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
     try:
         home_inp = input("--::> ")
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         exit()
         
     #if home==
@@ -794,566 +661,36 @@ def home_page():
                 time.sleep(5)
                 continue
         
-        # elif home_inp=="2":
-        #     banner()
-        #     pt.panel(size=60,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers]","2. Purge Users [Permanently Delete Users]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-        #     inp=input("--::> ").strip()
-        #     if inp=="1":
-        #         purge_srv()
-        #         #break
-        #     elif inp=="2":
-        #         purge_users()
-        #         #break
-        #     elif inp.lower()=="h":
-        #         home_page()
-        #         break
+        elif home_inp=="2":
+            banner()
+            pt.panel(size=60,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers]","2. Purge Users [Permanently Delete Users]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
+            inp=input("--::> ").strip()
+            if inp=="1":
+                purge_srv()
+                #break
+            elif inp=="2":
+                purge_users()
+                #break
+            elif inp.lower()=="h":
+                home_page()
+                break
 
-        #     else:
-        #         print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-        #         time.sleep(5)
-        #         continue
+            else:
+                print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                time.sleep(5)
+                continue
                 
         elif home_inp.lower()=="s":
             setup_wizard()
             
             
-        elif home_inp in ["2","3","4","5","6"]:
+        elif home_inp in ["3","4","5","6"]:
             banner()
             pt.panel(size=60,center=False,title="HomePage [/coming-soon/]", content=["This feature is coming soon!","Please check back later."],border_bold=True,color="cyan", center_content=False)
             time.sleep(5)
             
         home_page()
 
-def get_importlist(inp1=None,function="/", retry=True,verify=True):
-    
-    logging.debug("Fetching import list from user input.")
-    while True:
-        if inp1 == None:
-            banner()
-            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,",f"{Style.DIM}Please pass blank input to open Search and Info.",f"{Style.DIM}Enter h to go to the homepage"],border_bold=True,color="red")
-            inp1=input("--::> ")
-            if inp1=="":
-                banner()
-                pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}You have chosen to open {Fore.RED}Search and Info{Fore.CYAN}.", f"{Style.DIM}Please use the search feature to find servers and export them to a file.",f"{Style.DIM}Once you have exported a file, you can import it here."],border_bold=True,color="red")
-                search_server()
-        elif inp1.lower()=="h":
-            home_page()
-        else:
-            if not (inp1.endswith(".csv") or inp1.endswith(".txt")):
-                try:
-                    
-                    # CASE 1 with testing with CSV Extension
-                    
-                    path=inp1+".csv"
-                    
-                    with open(path,"r") as s: #Open as CSV
-                        content=list(csv.reader(s))
-                        
-                        
-                        # Check if file belongs to same panel
-                        if content[0][0]==os.getenv("panel_url") and verify: 
-                            logging.info(f"Import file with path {inp1} found in csv.")
-                            return list(content[1:])
-                        
-                        
-                        if content[0][0]!=os.getenv("panel_url") and verify and content[0][0].startswith("http"):
-                            logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
-                            pt.panel(size=70,center=False,title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.",f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"],border_bold=True,color="red")
-                            inp=input("--::> ")
-                            if inp.lower()=="y":
-                                return list(content[1:])
-                            else:
-                                return None
-                            
-                        if retry:
-                            inp1=None
-                        else:
-                            return None
-                        if content[0][0]!=os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
-                            logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
-                except FileNotFoundError:
-                    try:
-                        path=inp1+".txt"
-                        with open(path,"r") as s:
-                            content=list(csv.reader(s))
-                            if content[0][0]==os.getenv("panel_url") and verify:
-                                logging.info(f"Import file with path {inp1} found in txt.")
-                                return list(content[:-1])
-                    except FileNotFoundError:
-                        pt.panel(size=70,center=False,title=f"/purge/server-purge/import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."],border_bold=True,color="red")
-                        logging.error(f"Import file with path {inp1} not found in both txt and csv.")
-                        time.sleep(5)
-                        if retry:
-                            inp1=None
-                        else:
-                            return None
-            else:
-                try:
-                    with open(inp1,"r") as s:
-                        content=list(csv.reader(s))
-                        if content[0][0]==os.getenv("panel_url") and verify:
-                            logging.info(f"Import file with path {inp1} found.")
-                            return list(content[:-1])
-                except FileNotFoundError:
-                    pt.panel(size=70,center=False,title=f"/purge/server-purge/import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."],border_bold=True,color="red")
-                    logging.error(f"Import file with path {inp1} not found") 
-                    time.sleep(5)
-                    if retry:
-                        inp1=None
-                    else:
-                        return None 
-def search_server():
-    server_list=get_servers()
-    try:
-        parameters_list=list(server_list["data"][0]["attributes"].keys())
-    except IndexError:
-        print(f"{Fore.RED}{Style.BRIGHT}You dont have any servers on the Panel, or wingspan had an error fetching them. Sending you back to the homepage.")
-        time.sleep(5)
-        home_page()
-        return
-    converted=1
-    while converted!=0:
-        converted=0
-        for i in parameters_list:
-            try:
-                new_parameters=list(server_list["data"][0]["attributes"][i].keys())
-                parameters_list.remove(i)
-                converted+=1
-                for j in new_parameters:
-                    parameters_list.append(j)
-            except:
-                pass
-
-    params=[]
-    for i in parameters_list:
-        params.append([f"{Fore.YELLOW}{Back.LIGHTWHITE_EX}{i}"])
-        
-    selected_params = curses.wrapper(
-    server_selector,
-    server_list=params,
-    headers=[f"{Fore.BLUE}Select all filters to filter from."])
-    
-    if selected_params is None:
-        return
-
-    parameters_filter=[]
-    for i in selected_params:
-        for j in i:
-            parameters_filter.append(j)
-    
-    #servers_parametered=server_filter(server_list,parameters_filter)
-    servers_filtering_list=server_list["data"]
-    total_servers=len(servers_filtering_list)
-    # -------------------Asking Answers to filters----------------------
-    type_of_filter={'id':"int",
-                    'external_id':"str",
-                    'uuid':"str",
-                    'identifier':"str",
-                    'name':"str",
-                    'description':"str",
-                    'status':"str",
-                    'suspended':"bool",
-                    'user':"int",
-                    'node':"int",
-                    'allocation':"int",
-                    'nest':"int",
-                    'egg':"int",
-                    'updated_at':"date",
-                    'created_at':"date",
-                    'memory':"int",
-                    'swap':"int",
-                    'disk':"int",
-                    'io':"int",
-                    'cpu':"int",
-                    'threads':"str",
-                    'oom_disabled':"bool",
-                    'startup_command':"str",
-                    'image':"str",
-                    'installed':"bool",
-                    'environment':"str",
-                    'databases':"int",
-                    'allocations':"int",
-                    'backups':"int"}
-    
-    
-    for current_parameter in parameters_filter:
-        try:
-            type_of_parameter=type_of_filter[current_parameter]
-        except:
-            type_of_parameter="custom"
-            
-        if type_of_parameter=="int":
-            while True:
-                banner()
-                pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}add a range{Fore.RESET} like this: {Fore.GREEN}30-100","",f"You can also {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma","",f"Like this: {Fore.GREEN}5,8,50-60,12","",f"{Fore.RED}Refer to docs for advanced search info",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
-                value=""
-                # Spaces remove
-                for i in inp:
-                    if i != " ":
-                        value+=i 
-                
-            # -------------------------------------------------
-                if value=="":
-                    # Bypass this filter
-                    break
-            
-                if "," in value and "-" not in value:
-                    # Uh, this means that the items are only single elements, so we can split directly.
-                    a=value.split(",")
-                    filters=[]
-                    error=0
-                    for i in a:
-                        try:
-                            i=int(i)
-                            if i <0:
-                                raise 0
-                            filters.append(i)
-                        except:
-                            error=1
-                    if error==1:
-                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                        time.sleep(5)
-                        continue
-                    int_filters=filters
-            # --------------------------------------------------------
-
-                elif "," not in value and "-" in value:
-                    # Means that the input is just a single range
-                    try:
-                        a=value.split("-")
-                        ranges=[]
-                        if len(a)!=2:
-                            raise 0
-                        
-                        for i in a:
-                            if int(i)<0:
-                                raise 0
-                            ranges.append(int(i))
-                            
-                        if ranges[0]>ranges[1]:
-                            raise 0
-                                            
-                        
-                        int_filters=range(ranges[0],ranges[1]+1)
-                            
-                            
-                    except:
-                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                        time.sleep(5)
-                        continue
-
-
-                elif "," in value and "-" in value:
-                    # This is the last elif, means its the most complicated one, with both elements and ranges
-                    
-                    try:
-                        
-                        a=value.split(",")
-                        
-                        l1=[] #has all single elements
-                        l2=[] #has all range elements
-                        
-                        for i in a:
-                            if "-" in i:
-                                l2.append(i)
-                            else:
-                                l1.append(i)
-                                
-                    #-----------------Simple Elements---------------------
-
-                        l1_filters=[]
-                        for i in l1:
-                            i=int(i)
-                            if i <0:
-                                raise 0
-                            l1_filters.append(i)
-                            
-                    #---------------------Range Elements---------------------
-                        l2_filters=[]
-                        for value in l2:
-                            a=value.split("-")
-                            ranges=[]
-                            if len(a)!=2:
-                                raise 0
-                            
-                            for i in a:
-                                if int(i)<0:
-                                    raise 0
-                                ranges.append(int(i))
-                                
-                            if ranges[0]>ranges[1]:
-                                raise 0
-                            
-                            l2_filters+=list(range(ranges[0],ranges[1]+1))
-
-
-                                
-                    #------------------------------------------------------------
-                        combined_filters=l1_filters+l2_filters
-                        final_filter=[]
-                        for i in combined_filters:
-                            if i not in final_filter:
-                                final_filter.append(i)
-                        int_filters=final_filter
-                    # Final list ready with id_filters for all index numbers to be searched.            
-                    except:
-                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                        time.sleep(5)
-                        continue
-                
-                else:
-                    # Single element, no comma no dash
-                    try:
-                        n=int(value)
-                        if n<0:
-                            raise 0
-                        int_filters=[n]
-                    except:
-                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                        time.sleep(5)
-                        continue
-
-                #--------------FILTER---------------
-                servers_filtering_list = [
-                    srv for srv in servers_filtering_list
-                    if flatten_dict(srv["attributes"]).get(current_parameter) in int_filters
-                ]
-                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
-                time.sleep(1)
-                break
-                                    
-        # --------------------------------------------------------------------------                        
-        elif type_of_parameter=="bool":
-            while True:
-                banner()
-                pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Enter {Fore.GREEN}yes{Fore.RESET} or {Fore.GREEN}no",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
-                value=""
-                for i in inp:
-                    if i != " ":
-                        value+=i
-                value=value.lower()
-                
-                if value=="":
-                    break
-                
-                if value in ("yes","y","true","1"):
-                    want=True
-                elif value in ("no","n","false","0"):
-                    want=False
-                else:
-                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                    time.sleep(5)
-                    continue
-                
-                servers_filtering_list = [
-                    srv for srv in servers_filtering_list
-                    if flatten_dict(srv["attributes"]).get(current_parameter) == want
-                ]
-                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
-                time.sleep(1)
-                break
-        
-        # --------------------------------------------------------------------------
-        elif type_of_parameter=="date":
-            while True:
-                banner()
-                pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Date Range for {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Format: {Fore.GREEN}YYYY-MM-DD,YYYY-MM-DD","",f"Like this: {Fore.GREEN}2024-01-01,2025-01-01","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
-                value=""
-                for i in inp:
-                    if i != " ":
-                        value+=i
-                
-                if value=="":
-                    break
-                
-                try:
-                    a=value.split(",")
-                    if len(a)!=2:
-                        raise 0
-                    start_raw=a[0]
-                    end_raw=a[1]
-                    if start_raw.endswith("Z"):
-                        start_raw=start_raw[:-1]+"+00:00"
-                    if end_raw.endswith("Z"):
-                        end_raw=end_raw[:-1]+"+00:00"
-                    start=datetime.datetime.fromisoformat(start_raw)
-                    if start.tzinfo is None:
-                        start=start.replace(tzinfo=datetime.timezone.utc)
-                    end=datetime.datetime.fromisoformat(end_raw)
-                    if end.tzinfo is None:
-                        end=end.replace(tzinfo=datetime.timezone.utc)
-                    if start>end:
-                        raise 0
-                except:
-                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                    time.sleep(5)
-                    continue
-                
-                matched=[]
-                for srv in servers_filtering_list:
-                    raw=flatten_dict(srv["attributes"]).get(current_parameter)
-                    if not raw:
-                        continue
-                    try:
-                        check=raw
-                        if check.endswith("Z"):
-                            check=check[:-1]+"+00:00"
-                        check_date=datetime.datetime.fromisoformat(check)
-                        if check_date.tzinfo is None:
-                            check_date=check_date.replace(tzinfo=datetime.timezone.utc)
-                        if start<=check_date<=end:
-                            matched.append(srv)
-                    except:
-                        pass
-                servers_filtering_list=matched
-                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
-                time.sleep(1)
-                break
-
-        # --------------------------------------------------------------------------
-        else:
-            
-            while True:
-                banner()
-                pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma{Fore.RESET} (matches ANY of them)","",f"Use {Fore.GREEN}*{Fore.RESET} or {Fore.GREEN}%{Fore.RESET} as a wildcard, like {Fore.GREEN}node*{Fore.RESET} or {Fore.GREEN}*test*","",f"Wrap in {Fore.GREEN}/../{Fore.RESET} for raw regex, like {Fore.GREEN}/^py.*js$/","",f'Wrap in {Fore.GREEN}"..."{Fore.RESET} for a literal value, like {Fore.GREEN}"node*"{Fore.RESET} (ignores * and /)',"",f"Like this: {Fore.GREEN}suspended,py*","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
-                
-                if inp=="":
-                    break
-                
-                a=inp.split(",")
-                needles=[]
-                for i in a:
-                    i=i.strip()
-                    if i!="":
-                        needles.append(i)
-                
-                if not needles:
-                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                    time.sleep(5)
-                    continue
-                
-                patterns=[]
-                error=0
-                for n in needles:
-                    try:
-                        # AI GEN Code for wildcard checking and stuff:-
-                        
-                        if len(n)>=2 and n.startswith('"') and n.endswith('"'):
-                            # Quoted, literal mode - ignores * % / entirely
-                            literal=n[1:-1]
-                            pattern=re.compile(re.escape(literal), re.IGNORECASE)
-                            patterns.append((pattern,"search"))
-                        elif n.startswith("/") and n.endswith("/") and len(n)>=2:
-                            # Raw regex mode
-                            pattern=re.compile(n[1:-1], re.IGNORECASE)
-                            patterns.append((pattern,"search"))
-                        elif "*" in n or "%" in n:
-                            # Wildcard mode, * and % both act as wildcards
-                            # fnmatch.translate anchors the END only (\Z), NOT the start,
-                            # so it must be used with fullmatch, not search, or "p*" would
-                            # match any string containing a "p" anywhere (like "Suspend").
-                            wild=n.replace("%","*")
-                            pattern=re.compile(fnmatch.translate(wild), re.IGNORECASE)
-                            patterns.append((pattern,"fullmatch"))
-                        else:
-                            # Plain substring mode
-                            pattern=re.compile(re.escape(n), re.IGNORECASE)
-                            patterns.append((pattern,"search"))
-                    except:
-                        error=1
-                
-                if error==1:
-                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                    time.sleep(5)
-                    continue
-                
-                matched=[]
-                for srv in servers_filtering_list:
-                    val=flatten_dict(srv["attributes"]).get(current_parameter)
-                    val_str=str(val)
-                    hit=0
-                    for p,mode in patterns:
-                        if mode=="fullmatch":
-                            if p.fullmatch(val_str):
-                                hit=1
-                        else:
-                            if p.search(val_str):
-                                hit=1
-                    if hit==1:
-                        matched.append(srv)
-                servers_filtering_list=matched
-                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
-                time.sleep(1)
-                break
-
-    banner()
-    if not servers_filtering_list:
-        print(f"{Fore.RED}No servers matched the given filters.")
-    else:
-        banner()
-#        print(f"{Fore.GREEN}Matched {len(servers_filtering_list)} / {total_servers} server(s).{Fore.RESET}\nPlease select the servers you want to export from the next menu.")
-#        input("Press Enter to continue...")
-        
-        selected_rows = curses.wrapper(
-            server_selector,
-            server_list=[[flatten_dict(srv["attributes"]).get("id"), flatten_dict(srv["attributes"]).get("name")] for srv in servers_filtering_list],
-            headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
-            all_selected=True,
-        )
-        
-        if selected_rows is None:
-            print(f"{Fore.RED}No servers selected for export.")
-            time.sleep(2)
-            return
-        
-        servers_filtering_list=[]
-        for srv in selected_rows:
-            servers_filtering_list.append(srv)
-        
-        banner()
-        pt.panel(size=70,center=False,title=f"/search-and-info/info/export", content=[f"Would you like to {Fore.GREEN}Export{Fore.RESET} the server list? ({len(servers_filtering_list)} Servers)","After exporting, you could use the list for other functions.","",f'Enter "{Fore.GREEN}y{Fore.RESET}" to export or "{Fore.GREEN}n{Fore.RESET}" to skip'],border_bold=True,color="cyan")
-        while True:
-            inp=input("--::>")
-            if inp.lower() in ("y","yes"):
-                pt.panel(size=70,center=False,title=f"/search-and-info/info/export", content=[f"Please enter a name for your export.",f"{Fore.GREEN}Enter this name to Re-Import this list in a function!{Fore.RESET}","You can access the export file in the exports folder","in this file's root dir, unless you enter a complete path."],border_bold=True,color="cyan")
-                export_name=input("--::> ").strip()
-                if export_name=="":
-                    export_name="export.csv"
-                
-                if "\\" in export_name or "/" in export_name:
-                
-                    pass
-                else:
-                    export_name="exports/"+export_name
-                        
-                    
-                time.sleep(1)
-                banner()
-                
-                export_list(['id','name'],servers_filtering_list,export_name+".csv")
-                print(f"{Fore.GREEN}Exported {len(servers_filtering_list)} servers to {export_name}.csv successfully. Returning to Homepage.")
-                time.sleep(5)
-                return
-            elif inp.lower() in ("n","no"):
-                return
-            else:
-                print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
-                time.sleep(5)
-                continue
-
-def export_list(HEAD,servers,filepath):
-    filepath = os.path.join(PROJECT_ROOT, filepath)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(HEAD)
-        for srv in servers:
-            writer.writerow(srv)
-            
 def server_info():
     # This function has a lot of AI use because it involves very complex GUI and formatting, which is not achievable by hand.
     banner()
@@ -1452,7 +789,7 @@ def server_info():
             WARN = C["yellow"] | curses.A_BOLD
             BAD = C["red"] | curses.A_BOLD
             ACC = C["magenta"] | curses.A_BOLD
-            SUB = C["blue"] | curses.A_BOLD
+            #SUB = C["blue"] | curses.A_BOLD
 
             # probe whether this terminal can take block glyphs
             try:
@@ -2623,18 +1960,203 @@ def server_info():
 
         banner()
         print(f"Enter the numerical {Fore.GREEN}Server ID{Fore.RESET} to get all related information. Enter {Fore.GREEN}'h'{Fore.RESET} to return to homepage")
-def purge_srv():
-    importlist=get_importlist(function="/purge/server-purge/", retry=True)
-    print(importlist)
-    for i in importlist:
-        print(i)
-    time.sleep(10)
+
+# ---------------------------------------------------------------------------
+# Data Processing 
+# ---------------------------------------------------------------------------
+
+def get_importlist(inp1=None,function="/", retry=True,verify=True):
     
-    
-    
-def purge_users():
-    pt.panel(size=70,center=False,title=f"/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
-    time.sleep(5)
+    logging.debug("Fetching import list from user input.")
+    while True:
+        if inp1 is None:
+            banner()
+            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,", f"{Style.DIM}Please pass blank input to open Search and Info.", f"{Style.DIM}Enter h to go to the homepage"], border_bold=True, color="red")
+            inp1 = input("--::> ")
+            if inp1 == "":
+                banner()
+                pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}You have chosen to open {Fore.RED}Search and Info{Fore.CYAN}.", f"{Style.DIM}Please use the search feature to find servers and export them to a file.", f"{Style.DIM}Once you have exported a file, you can import it here."], border_bold=True, color="red")
+                search_server()
+        elif inp1.lower() == "h":
+            home_page()
+        else:
+            if not inp1.endswith(".csv"):
+                path = inp1 + ".csv"
+                if os.path.isfile(inp1 + ".csv"): 
+                    
+                    with open(path, "r") as s:  # Open and check
+                        content = list(csv.reader(s))
+                        
+                        # File belongs to same panel and has a valid tag
+                        if content[0][0] == os.getenv("panel_url") and verify:
+                            logging.info(f"Import file with path {inp1} found in csv. Opening Selector")
+                            selected_list=curses.wrapper(
+                                            server_selector,
+                                            server_list=list(content[1:]),
+                                            headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                            all_selected=True,
+                                        )
+                            return selected_list
+
+                        # File belongs to a different panel and has a valid tag
+                        elif content[0][0] != os.getenv("panel_url") and verify and content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
+                            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.", f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"], border_bold=True, color="red")
+                            inp = input("--:(y/N):> ")
+                            if inp.lower() == "y":
+                                selected_list=curses.wrapper(
+                                    server_selector,
+                                    server_list=list(content[1:]),
+                                    headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                    all_selected=True,
+                                )
+                                return selected_list
+                            else:
+                                return None
+
+                        # File does not have a valid tag and no panel URL was given
+                        elif content[0][0] != os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
+                            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}No panel reference found in imported CSV.", f"{Style.DIM}This process may be destructive. Do you want to proceed? "], border_bold=True, color="red")
+                            inp = input("--:(y/N):> ")
+                            if inp.lower() == "y":
+                                selected_list=curses.wrapper(
+                                    server_selector,
+                                    server_list=list(content[1:]),
+                                    headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                    all_selected=True,
+                                )
+                                return selected_list
+                            else:
+                                return None
+
+                        else:
+                            if len(content[0]) != len(content[-1]):
+                                selected_list=curses.wrapper(
+                                    server_selector,
+                                    server_list=list(content[1:]),
+                                    headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                    all_selected=True,
+                                )
+                                return selected_list
+                            else:
+                                selected_list=curses.wrapper(
+                                    server_selector,
+                                    server_list=list(content),
+                                    headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                    all_selected=True,
+                                )
+                                return selected_list
+                else:
+                    if os.path.isfile(f"exports/{path}"):
+                        logging.info(f"Import file found inside exports folder with path {path}")
+                        inp1 = f"exports/{path}"
+                        continue
+                    else:
+                        logging.error(f"Import file with path {path} not found")
+                        pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."], border_bold=True, color="red")
+                        time.sleep(5)
+                        if retry:
+                            banner()
+                            inp1 = None
+                            
+                        else:
+                            return None
+            #Ends with CSV Extension
+            else:
+                path = inp1
+                if os.path.isfile(inp1): 
+                    
+                    with open(path, "r") as s:  # Open and check
+                        content = list(csv.reader(s))
+                        
+                        # File belongs to same panel and has a valid tag
+                        if content[0][0] == os.getenv("panel_url") and verify:
+                            logging.info(f"Import file with path {inp1} found in csv.")
+                            selected_list=curses.wrapper(
+                                            server_selector,
+                                            server_list=list(content[1:]),
+                                            headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                            all_selected=True,
+                                        )
+                            return selected_list
+
+                        # File belongs to a different panel and has a valid tag
+                        elif content[0][0] != os.getenv("panel_url") and verify and content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
+                            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.", f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"], border_bold=True, color="red")
+                            inp = input("--:(y/N):> ")
+                            if inp.lower() == "y":
+                                selected_list=curses.wrapper(
+                                        server_selector,
+                                        server_list=list(content[1:]),
+                                        headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                        all_selected=True,
+                                    )
+                                return selected_list
+                                
+                            else:
+                                return None
+
+                        # File does not have a valid tag and no panel URL was given
+                        elif content[0][0] != os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
+                            logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
+                            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}No panel reference found in imported CSV.", f"{Style.DIM}This process may be destructive. Do you want to proceed? "], border_bold=True, color="red")
+                            inp = input("--:(y/N):> ")
+                            if inp.lower() == "y":
+                                selected_list=curses.wrapper(
+                                        server_selector,
+                                        server_list=list(content[1:]),
+                                        headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                        all_selected=True,
+                                    )
+                                return selected_list
+                                
+                            else:
+                                return None
+
+                        else:
+                            if len(content[0]) != len(content[-1]):
+                                selected_list=curses.wrapper(
+                                        server_selector,
+                                        server_list=list(content[1:]),
+                                        headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                        all_selected=True,
+                                    )
+                                return selected_list
+                            else:
+                                selected_list=curses.wrapper(
+                                        server_selector,
+                                        server_list=list(content),
+                                        headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                                        all_selected=True,
+                                    )
+                                return selected_list
+                else:
+                    if os.path.isfile(f"exports/{path}"):
+                        logging.info(f"Import file found inside exports folder with path {path}")
+                        inp1 = f"exports/{path}"
+                        continue
+                    else:
+                        logging.error(f"Import file with path {path} not found")
+                        pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}File not found! Please check the file name and try again."], border_bold=True, color="red")
+                        time.sleep(3)
+                        if retry:
+                            banner()
+                            inp1 = None
+                            time.sleep(5)
+                        else:
+                            return None
+
+def export_list(servers,filepath,HEAD=None):
+    filepath = os.path.join(PROJECT_ROOT, filepath)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        if HEAD:
+            writer.writerow(HEAD)
+        for srv in servers:
+            writer.writerow(srv)
 
 def server_filter(server_list:dict,header):
     
@@ -2656,10 +2178,564 @@ def server_filter(server_list:dict,header):
 
     return(server_final)
 
+# ---------------------------------------------------------------------------
+# Feature Functions 
+# ---------------------------------------------------------------------------
 
+def search_server():
+    server_list=get_servers()
+    try:
+        parameters_list=list(server_list["data"][0]["attributes"].keys())
+    except IndexError:
+        print(f"{Fore.RED}{Style.BRIGHT}You dont have any servers on the Panel, or wingspan had an error fetching them. Sending you back to the homepage.")
+        time.sleep(5)
+        home_page()
+        return
+    converted=1
+    while converted!=0:
+        converted=0
+        for i in parameters_list:
+            try:
+                new_parameters=list(server_list["data"][0]["attributes"][i].keys())
+                parameters_list.remove(i)
+                converted+=1
+                for j in new_parameters:
+                    parameters_list.append(j)
+            except:
+                pass
+
+    params=[]
+    for i in parameters_list:
+        params.append([f"{Fore.YELLOW}{Back.LIGHTWHITE_EX}{i}"])
+        
+    selected_params = curses.wrapper(
+    server_selector,
+    server_list=params,
+    headers=[f"{Fore.BLUE}Select all filters to filter from."])
+    
+    if selected_params is None:
+        return
+
+    parameters_filter=[]
+    for i in selected_params:
+        for j in i:
+            parameters_filter.append(j)
+    
+    #servers_parametered=server_filter(server_list,parameters_filter)
+    servers_filtering_list=server_list["data"]
+    total_servers=len(servers_filtering_list)
+    # -------------------Asking Answers to filters----------------------
+    type_of_filter={'id':"int",
+                    'external_id':"str",
+                    'uuid':"str",
+                    'identifier':"str",
+                    'name':"str",
+                    'description':"str",
+                    'status':"str",
+                    'suspended':"bool",
+                    'user':"int",
+                    'node':"int",
+                    'allocation':"int",
+                    'nest':"int",
+                    'egg':"int",
+                    'updated_at':"date",
+                    'created_at':"date",
+                    'memory':"int",
+                    'swap':"int",
+                    'disk':"int",
+                    'io':"int",
+                    'cpu':"int",
+                    'threads':"str",
+                    'oom_disabled':"bool",
+                    'startup_command':"str",
+                    'image':"str",
+                    'installed':"bool",
+                    'environment':"str",
+                    'databases':"int",
+                    'allocations':"int",
+                    'backups':"int"}
+    
+    
+    for current_parameter in parameters_filter:
+        try:
+            type_of_parameter=type_of_filter[current_parameter]
+        except:
+            type_of_parameter="custom"
+            
+        if type_of_parameter=="int":
+            while True:
+                banner()
+                pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}add a range{Fore.RESET} like this: {Fore.GREEN}30-100","",f"You can also {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma","",f"Like this: {Fore.GREEN}5,8,50-60,12","",f"{Fore.RED}Refer to docs for advanced search info",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
+                inp=input("--::> ")
+                value=""
+                # Spaces remove
+                for i in inp:
+                    if i != " ":
+                        value+=i 
+                
+            # -------------------------------------------------
+                if value=="":
+                    # Bypass this filter
+                    break
+            
+                if "," in value and "-" not in value:
+                    # Uh, this means that the items are only single elements, so we can split directly.
+                    a=value.split(",")
+                    filters=[]
+                    error=0
+                    for i in a:
+                        try:
+                            i=int(i)
+                            if i <0:
+                                raise 0
+                            filters.append(i)
+                        except:
+                            error=1
+                    if error==1:
+                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                        time.sleep(5)
+                        continue
+                    int_filters=filters
+            # --------------------------------------------------------
+
+                elif "," not in value and "-" in value:
+                    # Means that the input is just a single range
+                    try:
+                        a=value.split("-")
+                        ranges=[]
+                        if len(a)!=2:
+                            raise 0
+                        
+                        for i in a:
+                            if int(i)<0:
+                                raise 0
+                            ranges.append(int(i))
+                            
+                        if ranges[0]>ranges[1]:
+                            raise 0
+                                            
+                        
+                        int_filters=range(ranges[0],ranges[1]+1)
+                            
+                            
+                    except:
+                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                        time.sleep(5)
+                        continue
+
+
+                elif "," in value and "-" in value:
+                    # This is the last elif, means its the most complicated one, with both elements and ranges
+                    
+                    try:
+                        
+                        a=value.split(",")
+                        
+                        l1=[] #has all single elements
+                        l2=[] #has all range elements
+                        
+                        for i in a:
+                            if "-" in i:
+                                l2.append(i)
+                            else:
+                                l1.append(i)
+                                
+                    #-----------------Simple Elements---------------------
+
+                        l1_filters=[]
+                        for i in l1:
+                            i=int(i)
+                            if i <0:
+                                raise 0
+                            l1_filters.append(i)
+                            
+                    #---------------------Range Elements---------------------
+                        l2_filters=[]
+                        for value in l2:
+                            a=value.split("-")
+                            ranges=[]
+                            if len(a)!=2:
+                                raise 0
+                            
+                            for i in a:
+                                if int(i)<0:
+                                    raise 0
+                                ranges.append(int(i))
+                                
+                            if ranges[0]>ranges[1]:
+                                raise 0
+                            
+                            l2_filters+=list(range(ranges[0],ranges[1]+1))
+
+
+                                
+                    #------------------------------------------------------------
+                        combined_filters=l1_filters+l2_filters
+                        final_filter=[]
+                        for i in combined_filters:
+                            if i not in final_filter:
+                                final_filter.append(i)
+                        int_filters=final_filter
+                    # Final list ready with id_filters for all index numbers to be searched.            
+                    except:
+                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                        time.sleep(5)
+                        continue
+                
+                else:
+                    # Single element, no comma no dash
+                    try:
+                        n=int(value)
+                        if n<0:
+                            raise 0
+                        int_filters=[n]
+                    except:
+                        print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                        time.sleep(5)
+                        continue
+
+                #--------------FILTER---------------
+                servers_filtering_list = [
+                    srv for srv in servers_filtering_list
+                    if flatten_dict(srv["attributes"]).get(current_parameter) in int_filters
+                ]
+                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
+                time.sleep(1)
+                break
+                                    
+        # --------------------------------------------------------------------------                        
+        elif type_of_parameter=="bool":
+            while True:
+                banner()
+                pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Enter {Fore.GREEN}yes{Fore.RESET} or {Fore.GREEN}no",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
+                inp=input("--::> ")
+                value=""
+                for i in inp:
+                    if i != " ":
+                        value+=i
+                value=value.lower()
+                
+                if value=="":
+                    break
+                
+                if value in ("yes","y","true","1"):
+                    want=True
+                elif value in ("no","n","false","0"):
+                    want=False
+                else:
+                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                    time.sleep(5)
+                    continue
+                
+                servers_filtering_list = [
+                    srv for srv in servers_filtering_list
+                    if flatten_dict(srv["attributes"]).get(current_parameter) == want
+                ]
+                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
+                time.sleep(1)
+                break
+        
+        # --------------------------------------------------------------------------
+        elif type_of_parameter=="date":
+            while True:
+                banner()
+                pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Date Range for {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Format: {Fore.GREEN}YYYY-MM-DD,YYYY-MM-DD","",f"Like this: {Fore.GREEN}2024-01-01,2025-01-01","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
+                inp=input("--::> ")
+                value=""
+                for i in inp:
+                    if i != " ":
+                        value+=i
+                
+                if value=="":
+                    break
+                
+                try:
+                    a=value.split(",")
+                    if len(a)!=2:
+                        raise 0
+                    start_raw=a[0]
+                    end_raw=a[1]
+                    if start_raw.endswith("Z"):
+                        start_raw=start_raw[:-1]+"+00:00"
+                    if end_raw.endswith("Z"):
+                        end_raw=end_raw[:-1]+"+00:00"
+                    start=datetime.datetime.fromisoformat(start_raw)
+                    if start.tzinfo is None:
+                        start=start.replace(tzinfo=datetime.timezone.utc)
+                    end=datetime.datetime.fromisoformat(end_raw)
+                    if end.tzinfo is None:
+                        end=end.replace(tzinfo=datetime.timezone.utc)
+                    if start>end:
+                        raise 0
+                except:
+                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                    time.sleep(5)
+                    continue
+                
+                matched=[]
+                for srv in servers_filtering_list:
+                    raw=flatten_dict(srv["attributes"]).get(current_parameter)
+                    if not raw:
+                        continue
+                    try:
+                        check=raw
+                        if check.endswith("Z"):
+                            check=check[:-1]+"+00:00"
+                        check_date=datetime.datetime.fromisoformat(check)
+                        if check_date.tzinfo is None:
+                            check_date=check_date.replace(tzinfo=datetime.timezone.utc)
+                        if start<=check_date<=end:
+                            matched.append(srv)
+                    except:
+                        pass
+                servers_filtering_list=matched
+                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
+                time.sleep(1)
+                break
+
+        # --------------------------------------------------------------------------
+        else:
+            
+            while True:
+                banner()
+                pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma{Fore.RESET} (matches ANY of them)","",f"Use {Fore.GREEN}*{Fore.RESET} or {Fore.GREEN}%{Fore.RESET} as a wildcard, like {Fore.GREEN}node*{Fore.RESET} or {Fore.GREEN}*test*","",f"Wrap in {Fore.GREEN}/../{Fore.RESET} for raw regex, like {Fore.GREEN}/^py.*js$/","",f'Wrap in {Fore.GREEN}"..."{Fore.RESET} for a literal value, like {Fore.GREEN}"node*"{Fore.RESET} (ignores * and /)',"",f"Like this: {Fore.GREEN}suspended,py*","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
+                inp=input("--::> ")
+                
+                if inp=="":
+                    break
+                
+                a=inp.split(",")
+                needles=[]
+                for i in a:
+                    i=i.strip()
+                    if i!="":
+                        needles.append(i)
+                
+                if not needles:
+                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                    time.sleep(5)
+                    continue
+                
+                patterns=[]
+                error=0
+                for n in needles:
+                    try:
+                        # AI GEN Code for wildcard checking and stuff:-
+                        
+                        if len(n)>=2 and n.startswith('"') and n.endswith('"'):
+                            # Quoted, literal mode - ignores * % / entirely
+                            literal=n[1:-1]
+                            pattern=re.compile(re.escape(literal), re.IGNORECASE)
+                            patterns.append((pattern,"search"))
+                        elif n.startswith("/") and n.endswith("/") and len(n)>=2:
+                            # Raw regex mode
+                            pattern=re.compile(n[1:-1], re.IGNORECASE)
+                            patterns.append((pattern,"search"))
+                        elif "*" in n or "%" in n:
+                            # Wildcard mode, * and % both act as wildcards
+                            # fnmatch.translate anchors the END only (\Z), NOT the start,
+                            # so it must be used with fullmatch, not search, or "p*" would
+                            # match any string containing a "p" anywhere (like "Suspend").
+                            wild=n.replace("%","*")
+                            pattern=re.compile(fnmatch.translate(wild), re.IGNORECASE)
+                            patterns.append((pattern,"fullmatch"))
+                        else:
+                            # Plain substring mode
+                            pattern=re.compile(re.escape(n), re.IGNORECASE)
+                            patterns.append((pattern,"search"))
+                    except:
+                        error=1
+                
+                if error==1:
+                    print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                    time.sleep(5)
+                    continue
+                
+                matched=[]
+                for srv in servers_filtering_list:
+                    val=flatten_dict(srv["attributes"]).get(current_parameter)
+                    val_str=str(val)
+                    hit=0
+                    for p,mode in patterns:
+                        if mode=="fullmatch":
+                            if p.fullmatch(val_str):
+                                hit=1
+                        else:
+                            if p.search(val_str):
+                                hit=1
+                    if hit==1:
+                        matched.append(srv)
+                servers_filtering_list=matched
+                print(f"{Fore.CYAN}[{current_parameter}] -> {len(servers_filtering_list)} / {total_servers} servers remaining.")
+                time.sleep(1)
+                break
+
+    banner()
+    if not servers_filtering_list:
+        print(f"{Fore.RED}No servers matched the given filters.")
+        time.sleep(5)
+        return
+    else:
+        banner()
+#        print(f"{Fore.GREEN}Matched {len(servers_filtering_list)} / {total_servers} server(s).{Fore.RESET}\nPlease select the servers you want to export from the next menu.")
+#        input("Press Enter to continue...")
+        
+        selected_rows = curses.wrapper(
+            server_selector,
+            server_list=[[flatten_dict(srv["attributes"]).get("id"), flatten_dict(srv["attributes"]).get("name")] for srv in servers_filtering_list],
+            headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+            all_selected=True,
+        )
+        
+        if selected_rows is None:
+            print(f"{Fore.RED}No servers selected for export.")
+            time.sleep(2)
+            return
+        
+        servers_filtering_list=[]
+        for srv in selected_rows:
+            servers_filtering_list.append(srv)
+        
+        banner()
+        pt.panel(size=70,center=False,title="/search-and-info/info/export", content=[f"Would you like to {Fore.GREEN}Export{Fore.RESET} the server list? ({len(servers_filtering_list)} Servers)","After exporting, you could use the list for other functions.","",f'Enter "{Fore.GREEN}y{Fore.RESET}" to export or "{Fore.GREEN}n{Fore.RESET}" to skip'],border_bold=True,color="cyan")
+        while True:
+            inp=input("--::>")
+            if inp.lower() in ("y","yes"):
+                pt.panel(size=70,center=False,title="/search-and-info/info/export", content=["Please enter a name for your export.",f"{Fore.GREEN}Enter this name to Re-Import this list in a function!{Fore.RESET}","You can access the export file in the exports folder","in this file's root dir, unless you enter a complete path."],border_bold=True,color="cyan")
+                export_name=input("--::> ").strip()
+                if export_name=="":
+                    export_name="export.csv"
+                
+                if "\\" in export_name or "/" in export_name:
+                
+                    pass
+                else:
+                    export_name="exports/"+export_name
+                        
+                    
+                time.sleep(1)
+                banner()
+                
+                export_list(servers_filtering_list,export_name+".csv",HEAD=[os.getenv("panel_url")])
+                print(f"{Fore.GREEN}Exported {len(servers_filtering_list)} servers to {export_name}.csv successfully. Returning to Homepage.")
+                time.sleep(5)
+                return
+            elif inp.lower() in ("n","no"):
+                return
+            else:
+                print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
+                time.sleep(5)
+                continue
+
+def purge_srv():
+    importlist=get_importlist(function="/purge/server-purge/", retry=True)
+    while True:
+        banner()
+        pt.panel(size=70,center=False,title="/purge/server-purge/confirmation", content=[f"{Fore.MAGENTA}{Style.BRIGHT}You have chosen to purge {len(importlist)} servers.",f"{Fore.RED}This process is irreversible and will delete all selected servers!","Press Y to confirm, N to Cancel, E to edit selection"],border_bold=True,color="red")
+        inp=input("--:(y/N/e):> ")
+        if inp.lower()=="y":
+            break
+        elif inp.lower()=="e":
+            importlist=get_importlist(function="/purge/server-purge/", retry=True)
+            continue
+        elif inp.lower()=="n":
+            pt.panel(size=70,center=False,title="/purge/server-purge/cancelled", content=[f"{Fore.RED}{Style.BRIGHT}Server purge cancelled. Returning to homepage."],border_bold=True,color="green")
+            time.sleep(5)
+            return
+            
+        
+    banner()
+    pt.panel(size=70,center=False,title="/purge/server-purge/confirm", content=[f"{Fore.RED}{Style.BRIGHT}This action would DELETE {len(importlist)} Servers.", f"{Fore.RED}This process is irreversible and will delete all selected servers."],border_bold=True,color="red")
+    while True:
+        try:
+            inp=int(input(f"--:(Enter {len(importlist)} to confirm):> "))
+            if inp == len(importlist):
+                break
+            else:
+                print(f"{Fore.RED}Incorrect number entered. Cancelling Purge...")
+                time.sleep(5)
+                return
+        except ValueError:
+            print(f"{Fore.RED}Invalid input. Please enter a valid number.")
+    banner()
+    
+    pt.panel(size=70,center=False,title="/purge/server-purge/prompt", content=[f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}F{Fore.BLUE} for {Fore.RED}Force Delete{Style.RESET_ALL}",f"{Fore.BLUE}{Style.BRIGHT}Enter {Style.BRIGHT}{Fore.RED}S{Fore.BLUE}{Style.BRIGHT}for {Fore.RED}{Style.BRIGHT} Standard Delete",
+            f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}U{Fore.BLUE} for {Fore.RED}Unverified Standard Delete{Style.RESET_ALL}",f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}UF{Fore.BLUE} for {Fore.RED}Unverified Force Delete{Style.RESET_ALL}",f"{Style.DIM}Any other value would lead to cancellation."],border_bold=True,color="red")
+    inp=input("--:(F/S):> ")
+    if inp.lower()=="f":
+        forcedel=True
+        unverified=False
+    elif inp.lower()=="s":
+        forcedel=False
+        unverified=False
+    elif inp.lower()=="u":
+        unverified=True
+        forcedel=False
+    elif inp.lower()=="uf":
+        unverified=True
+        forcedel=True 
+    else:
+        pt.panel(size=70,center=False,title="/purge/server-purge/cancelled", content=[f"{Fore.RED}{Style.BRIGHT}Server purge cancelled. Invalid Input",f"{Style.DIM}Returning to HomePage..."],border_bold=True,color="green")
+        time.sleep(5)
+        return
+
+    
+    pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.RED}{Style.BRIGHT}Started Purging {len(importlist)} servers."],border_bold=True,color="red")
+    serverdict={}
+    all_srv_list=get_servers()["data"]
+    for server in all_srv_list:
+        serverdict[server["attributes"]["id"]]=server["attributes"]["name"]
+        
+    
+    banner()
+    failed=0
+    
+    passed=0
+    for i in importlist:
+        name=i[1]
+        id=i[0]
+        
+        if id not in serverdict.keys():
+            pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.RED}{Style.BRIGHT}Server ID: {id}, Name: {name}",f"{Fore.RED}{Style.BRIGHT}Not found on Panel. Skipping..."],border_bold=True,color="red")
+            time.sleep(2)
+            continue
+
+        elif name != serverdict[id] and not unverified:
+            pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.BLUE}{Style.BRIGHT}Server ID {id} has name {Fore.RED}{serverdict[id]}{Fore.BLUE}{Style.BRIGHT} on Panel",f"{Fore.BLUE}{Style.BRIGHT}Instead of {serverdict[id]} as per exportfile",f"{Style.DIM}Should this server be deleted?"],border_bold=True,color="red")
+            inp=input("--:(y/N):> ")
+            if inp.lowerp=="y":
+                pass
+            else:
+                continue
+        
+    
+        if forcedel:
+            dt={'force':True}
+        else:
+            dt=None
+        r,status=api_request("DELETE",f"/api/application/servers/{id}",data=dt)
+        if r==None or not status.startswith(2):
+            logging.error(f"Purge: Unable to delete server with ID: {id}; Name: '{name}'; Error: {status} ; Response: {r}")
+            failed+=1
+            if not unverified:
+                print(f"\r{Fore.RED}{Style.BRIGHT}❎ UNABLE TO DELETE SERVER WITH ID {Fore.BLUE}{id}{Fore.RED}.")
+                time.sleep(2)
+        else:
+            logging.info(f"Purge: Deleted server with ID: {id}; Name: '{name}' succesfully!")
+            passed+=1
+            if not unverified:
+                print(f"\r{Fore.RED}{Style.BRIGHT}✅ Deleted Server {id} - {name}") #Its not AI, I put the " - " myself.
+    banner()           
+    pt.panel(size=70,center=False,title="/purge/server-purge/complete", content=[f"{Fore.GREEN}{Style.BRIGHT}Purge Complete!",f"{Style.BRIGHT}{Fore.RED}Failed: {Style.GREEN}{failed}{Fore.RED}{Style.BRIGHT}, Passed: {Style.GREEN}{passed}",f"{Style.DIM}Press Enter to move to Homepage."],border_bold=True,color="blue")
+    input()
+    return
+   
+def purge_users():
+    pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
+    time.sleep(5)
 
 # ---------------------------------------------------------------------------
-# ARGUMENT PARSING / CLI ENTRY
+# PARSER AND RUNNING
 # ---------------------------------------------------------------------------
 
 def build_parser():
@@ -2670,53 +2746,11 @@ def build_parser():
     parser = argparse.ArgumentParser(prog="wingspan", description="Wingspan CLI management tool")
     subparsers = parser.add_subparsers(dest="command", required=False, help="Subcommands")
 
-    # 1. Setup Subcommand (Stand-alone, no filters needed)
+
     setup_parser = subparsers.add_parser("setup", help="Run the configuration setup wizard")
     setup_parser.add_argument("--setup", action="store_true", required=False, help="Trigger setup sequence")
 
-    # 2. Shared Parent Parser for Common Filter Flags
-    filter_parent = argparse.ArgumentParser(add_help=False)
-    filter_parent.add_argument("--node", help="Filter by node name")
-    filter_parent.add_argument("--status", help="Filter by status (e.g., running, stopped)")
-    filter_parent.add_argument("--name", help="Filter by server name (regex/substring)")
-    filter_parent.add_argument("--min-ram", type=int, help="Minimum RAM in MB")
-    filter_parent.add_argument("--max-ram", type=int, help="Maximum RAM in MB")
-    filter_parent.add_argument("--owner", help="Filter by owner ID or username")
-
-    # 3. Shared Parent Parser for Global Execution Modifiers
-    execution_parent = argparse.ArgumentParser(add_help=False)
-    execution_parent.add_argument("--dry-run", action="store_true", help="Simulate actions without applying changes")
-    execution_parent.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompts")
-
-    # 4. List Subcommand
-    list_parser = subparsers.add_parser("list", parents=[filter_parent], help="List and filter servers")
-    list_parser.add_argument("--output", choices=["table", "csv", "json"], default="table", help="Output format")
-
-    # 5. Resize Subcommand
-    resize_parser = subparsers.add_parser("resize", parents=[filter_parent, execution_parent], help="Bulk resize servers")
-    resize_parser.add_argument("--ram", type=int, required=True, help="Target RAM in MB")
-    resize_parser.add_argument("--cpu", type=int, required=True, help="Target CPU cores")
-    resize_parser.add_argument("--disk", type=int, required=True, help="Target Disk space in GB")
-
-    # 6. Power Subcommand
-    power_parser = subparsers.add_parser("power", parents=[filter_parent, execution_parent], help="Bulk power management")
-    power_parser.add_argument("--action", choices=["start", "stop", "restart", "kill"], required=True, help="Power action to execute")
-
-    # 7. Suspend Subcommand
-    suspend_parser = subparsers.add_parser("suspend", parents=[filter_parent, execution_parent], help="Bulk suspend servers")
-    suspend_parser.add_argument("--undo", action="store_true", help="Unsuspend/resume the target servers")
-
-    # 8. Purge Subcommand
-    purge_parser = subparsers.add_parser("purge", parents=[filter_parent, execution_parent], help="Bulk purge/delete servers")
-    purge_parser.add_argument("--manifest", help="Path to manifest FILE for validation tracking")
-
-    # 9. Reinstall Subcommand
-    subparsers.add_parser("reinstall", parents=[filter_parent, execution_parent], help="Bulk reinstall OS/environments")
-
     return parser
-
-
-
 
 def main():
     """Main execution block mapping arguments to backend functionality."""
