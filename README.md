@@ -3,7 +3,7 @@
 ```
                               )       \   /      (
                              /|\      )\_/(     /|\ 
-    *                       / | \    (/\|/\)   / | \                      *
+    *                       / | \    (/\|/\)   / | \                       *
     |`.____________________/__|__o____\`|'/___o__|__\____________________.'|
     |                           '^`    \|/   '^`                           |
     |                                   V                                  |
@@ -24,8 +24,8 @@
 
 **Project submitted to Submitted to [Stardance, Hack Club](https://stardance.hackclub.com)**
 
-### [Hack Club Show and Tell](https://events.hackclub.com/stardance-show--tell/) #1 Winner! 🥇 🏆
-
+### 2 TIMES [Hack Club Show and Tell](https://events.hackclub.com/stardance-show--tell/) #1 Winner! 🥇 🏆
+### STARDANCE SUPER STAR PROJECT 🏆
 
 # Welcome to Wingspan, Server Management and Automation for Pterodactyl!
 
@@ -100,7 +100,7 @@ Would boot into main dashboard after setup everytime!
         Simple everyday purge, where a keyword must be present in the server name to make it survive, else would be deleted. For data safety reasons, we dont keep it case sensitive, that means if purge protection word is "Prot", then servers with "prot"/"PrOt"/"pROT" (etc.) in name would be protected too. 
 - > **2. User Purge**: 
         
-      User based purge, gives ability to delete users who dont have a server, or specific deletion by providing an importlist..
+      User based purge, gives ability to delete users who dont have a server. You can choose to delete admins or not..
 
 ## 3. Power Actions
     > This function allows you to bulk start, stop, and kill servers by providing an importlist.

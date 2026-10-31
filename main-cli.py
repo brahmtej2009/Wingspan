@@ -16,19 +16,26 @@ along with this program. If not, see <https://www.gnu.org/licenses/>."""
 
 # ---------- Auto Dependencies Check and Install ------------
 
+# Critical Imports which are installed by default in python
 import os
 import sys
 import subprocess
 import hashlib
 
-
+# Banner Function, it is triggered to display the wingspan logo in terminal, with given args.
 def banner(animation=False, stars=False, clear=True):
+    """Wingspan Banner. Customizable through Args.
+    Animation: Prints the logo line by line in an animation
+    Stars: Displays colorful dots on screen like a starry night before displaying logo
+    Clear: Clear the screen's content before adding the logo 
+    """
     if clear:
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('cls' if os.name == 'nt' else 'clear') # Clears screen for both linux/windows terminals.
     try:
-        sys.stdout.write("\033[?25l")
+        sys.stdout.write("\033[?25l") #Make cursor disappear on terminal
         sys.stdout.flush()
 
+        # Commonly Used ASCII Tags in Banner
         RESET = "\033[0m"
         
         RIGGING = "\033[38;5;251m"
@@ -39,11 +46,11 @@ def banner(animation=False, stars=False, clear=True):
         WAVE = "\033[38;5;24m"
         GRAD = ["\033[38;5;51m", "\033[38;5;45m", "\033[38;5;39m",
                 "\033[38;5;33m", "\033[38;5;27m"]
-
+        #Wingspan Banner each line as a list
         raw_lines = [
             "                          )       \\   /      (",
             "                         /|\\      )\\_/(     /|\\ ",
-            "*                       / | \\    (/\\|/\\)   / | \\                      *",
+            "*                       / | \\    (/\\|/\\)   / | \\                       *",
             "|`.____________________/__|__o____\\`|'/___o__|__\\____________________.'|",
             "|                           '^`    \\|/   '^`                           |",
             "|                                   V                                  |",
@@ -58,7 +65,9 @@ def banner(animation=False, stars=False, clear=True):
             "*                l  /   V       ))            V   \\ l                  *",
             "                 l/            //                  \\I",
             "                               V"]
-
+        
+        
+        # Function below this is AI done for coloring.
         colored_lines = [
             RIGGING + raw_lines[0] + RESET,
             RIGGING + raw_lines[1] + RESET,
@@ -105,42 +114,54 @@ def banner(animation=False, stars=False, clear=True):
         print()            
         # ASCII ART CREDITS TO Alan Greep
     finally:
-        sys.stdout.write("\033[?25h")
+        sys.stdout.write("\033[?25h") #Display Back the cursor
         sys.stdout.flush()
 
-
+# Show a banner at wingspan boot so terminal doesnt look empty.
 banner()
+
+
+# Detect System Platform
 IS_WINDOWS = sys.platform.startswith("win")
 IS_LINUX = sys.platform.startswith("linux")
-FROZEN = getattr(sys, "frozen", False)
+FROZEN = getattr(sys, "frozen", False) #Check if running as an Exe or standalone file
 
-if FROZEN:
+if FROZEN: # If exe, set the path accordingly so files export correctly in the same dir as the exe.
     PROJECT_ROOT = os.path.dirname(os.path.abspath(sys.executable))
-else:
+else: # If not exe, set path accordingly
     PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-def _bootstrap():
+def _bootstrap(): 
+    """Function to automatically setup a Venv and install python dependencies.
+    This function is done by AI."""
     project_root = os.path.dirname(os.path.abspath(__file__))
     venv_dir = os.path.join(project_root, ".venv")
     requirements_path = os.path.join(project_root, "requirements.txt")
     hash_marker_path = os.path.join(venv_dir, ".requirements.hash")
 
+
+    # Creates a python venv variable according to os
     venv_python = os.path.join(
         venv_dir,
         "Scripts" if IS_WINDOWS else "bin",
         "python.exe" if IS_WINDOWS else "python",
     )
 
+    # Check if the python running this program is the same one as the venv executable
     current_python = os.path.normcase(os.path.abspath(sys.executable))
     target_python = os.path.normcase(os.path.abspath(venv_python))
+    # If yes, setup complete! 
     if current_python == target_python:
         return
 
     first_time = not os.path.exists(venv_python)
+    # If not, means its the first run / corrupted Venv, We'll fix it.
     if first_time:
         print("[Wingspan] Welcome to Wingspan! We detect that its your first run.. Please wait while we set up the environment..")
         import venv as venv_module
         print("This process may take some time..")
+        
+        #Make the venv folder and setup all the default libraries.
         venv_module.EnvBuilder(with_pip=True, upgrade_deps=True).create(venv_dir)
         print("[Wingspan] Virtual environment created. Ready!")
 
@@ -148,13 +169,18 @@ def _bootstrap():
         [venv_python, "-m", "pip", "--version"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
+    
     if pip_check.returncode != 0:
+        # This happens when pip is of old version, or didnt get installed with python venv setup. We'll fix it
+        
         print("[Wingspan] pip missing inside venv, trying to fix it...")
         fix = subprocess.run(
             [venv_python, "-m", "ensurepip", "--upgrade"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
+        
         if fix.returncode != 0:
+            # If pip was unable to install, exit cleanly, stating the error.
             print(
                 "[Wingspan] Could not install pip automatically. This is a system/os level issue, not an issue with Wingspan.\n"
                 "On Debian/Ubuntu this usually means python3-venv is missing. Run:\n\n"
@@ -164,10 +190,13 @@ def _bootstrap():
                 f"    python3 {os.path.abspath(__file__)}\n"
             )
             sys.exit(1)
+        #If pip installed correctly, say and move ahead.
         print("[Wingspan] pip fixed.")
 
     if os.path.exists(requirements_path):
-        with open(requirements_path, "rb") as f:
+        # Find Requirements file
+        
+        with open(requirements_path, "rb") as f: #read requirements file
             current_hash = hashlib.sha256(f.read()).hexdigest()
 
         previous_hash = None
@@ -176,7 +205,7 @@ def _bootstrap():
                 previous_hash = f.read().strip()
 
         if first_time or current_hash != previous_hash:
-            print("[Wingspan] Installing/Updating dependencies...")
+            print("[Wingspan] Installing/Updating dependencies...") #Start installing requirements
             result = subprocess.run(
                 [venv_python, "-m", "pip", "install", "-q", "-r", requirements_path]
             )
@@ -187,22 +216,37 @@ def _bootstrap():
                 f.write(current_hash)
             print("[Wingspan] Done!")
     else:
+        # Requirements file not found.
         print(f"[Wingspan] Warning: no requirements.txt found at {requirements_path}, skipping installs.")
 
     if IS_WINDOWS:
-
-        print("Starting Up...")
-        subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
-        result = subprocess.run([venv_python, os.path.abspath(__file__)] + sys.argv[1:])
-        
-        sys.exit(result.returncode)
+        # If its windows, then start the code from the python executable.
+        try:
+            
+            
+            # Windows does not have curses by default, it has to be installed separately if not already done.
+            subprocess.run([venv_python, "-m", "pip", "install", "-q", "windows-curses"])
+            
+            # Wingspan runs here, in this subprocess.
+            result = subprocess.run([venv_python, os.path.abspath(__file__)] + sys.argv[1:])
+            
+            # If any error, raise that error and trigger exit
+            sys.exit(result.returncode)
+        except:
+            # Catch raised error, and exit cleanly
+            print("\n\nWingspan Exited.")
+            exit()
     else:
-
-        print("Starting Up...")
+        # Similar process with linux
+        
+       
         os.execv(venv_python, [venv_python, os.path.abspath(__file__)] + sys.argv[1:])
 
 
 def _enable_ansi_on_windows():
+    """
+    Enable color handling on windows terminals. AI Generated Function
+    """
     if not IS_WINDOWS:
         return
     try:
@@ -224,24 +268,33 @@ _enable_ansi_on_windows()
 
 #--------------------------Imports--------------------------
 
+# At this point, all dependencies have been installed, so import them
 import logging
 import time, json, requests, datetime,random,argparse,curses,re,fnmatch,csv
 from dotenv import load_dotenv
 from pytterns import Pytterns
 from colorama import Fore,Style, Back
 pt = Pytterns()
-#if IS_WINDOWS:
-#    import tkinter
 
-load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+
+# SHOW LOADING SCREEN
+pt.panel(size=25,center=True,title="Launching Wingspan", content=["Loading..."],border_bold=True,color="blue")
+
+
 
 # ---------------------------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------------------------
 
+# Setup of Paths for logs and env
 LOG_PATH = os.path.join(PROJECT_ROOT, "wingspan.log")
 ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
 
+# Load the env file from defined path
+load_dotenv(ENV_PATH)
+
+# Universal header with API Key already set up for pterodactyl. Also defines
+# API Version so pterodactyl sends back correct response.
 HEADERS = {
     'Authorization': f'Bearer {os.getenv("api_key")}',
     'Accept': 'Application/vnd.pterodactyl.v1+json'
@@ -278,23 +331,70 @@ def power_on_self_test():
     else:
         logging.info("Created Logfile")
     
+    #----API----
+    r=requests.get(url=os.getenv("panel_url")+"/api/application/nodes",headers=HEADERS)
+    status=str(r.status_code)
+    if status.startswith("2"):
+        logging.info("Panel and API Key are working correctly!")
+    elif status in ["403","401"]:
+        pt.panel(size=90,center=False,title="Power On Self Test Error",
+                 content=[f"{Fore.RED}There are possible permission issues in your API KEY",f"{Style.DIM}This is not a wingspan issue, check your API Key",f"{Style.DIM}Do you wish to ignore this issue and boot wingspan?"],border_bold=True,color="cyan")
+        logging.critical("Error in POST: Permission Errors found in API KEY.")
+        inp=input("--:(y/n):>") # Validated Input
+        if inp.lower()=="y":
+            logging.info("Continuing with wingspan despite of API Key Permission errors.")
+            return
+        else:
+            logging.info("Stopping wingspan due to API Key Permission errors.")
+            exit()
+            
+    elif status in ["500","502"]:
+        pt.panel(size=90,center=False,title="Power On Self Test Error",
+                 content=[f"{Fore.RED}Your pterodactyl instance is down / unreachable",f"{Style.DIM}This is not a wingspan issue, check if your panel is online",f"{Style.DIM}Do you wish to ignore this issue and boot wingspan?"],border_bold=True,color="cyan")
+        logging.critical("Error in POST: Pterodactyl Panel is Down / Unreachable.")
+        inp=input("--:(y/n):>") # Validated Input
+        if inp.lower()=="y":
+            logging.info("Continuing with wingspan despite Pterodactyl Downtime.")
+            return
+        else:
+            logging.info("Stopping wingspan due to Pterodactyl Downtime.")
+            exit()
+    
+    else:
+        banner()
+        pt.panel(size=90,center=True,title="Power On Self Test Error",
+                 content=[f"{Fore.RED}An Unknown Error: {status} was encountered during boot",f"{Style.DIM}This is not a wingspan issue, please check your Pterodactyl",f"{Style.DIM}Do you wish to ignore this issue and boot wingspan?"],border_bold=True,color="cyan")
+        logging.critical(f"Unknown Issue Encountered in POST: {status} .")
+        inp=input("--:(y/n):>") # Validated Input
+        if inp.lower()=="y":
+            logging.info("Continuing with wingspan despite Pterodactyl Downtime.")
+            return
+        else:
+            logging.info("Stopping wingspan due to Pterodactyl Downtime.")
+            exit()
+    
+        
+            
+        
+            
     logging.info("Wingspan Power-On Self Test completed successfully.")
 
+    
 def setup_wizard():
     """
-    Interactive prompt (input()) asking for panel URL + API key,
-    then calls save_config(). Used by `wingspan --setup`.
-    TODO: implement
+    This is the setup screen which runs when you enter "s" into wingspan homepage
+    or run it for the very first time. It has auto validators and ensures setup is done correctly.
+    It does not check for API Key Validity or Permissions, thats the work of POST
     """
     banner(animation=True, stars=True, clear=True)
     time.sleep(1)
     logging.info("Initiating Setup Wizard")
     #--------------------------------------------------------------------------------------
     pt.panel(size=90,center=False,title="Wingspan Setup Wizard (1/3)", content=["Enter your Panel URL","(e.g. https://panel.example.com)"],border_bold=True,color="cyan")
-    panel_url = input("--::>").strip()
+    panel_url = input("--::>").strip() # Validated Input
     while not panel_url.startswith(("http://","https://")):
-        print("Invalid URL. Please enter a valid URL starting with http:// or https://, and do not put a / at the end.")
-        panel_url = input("--::>").strip()
+        print(f"\n{Fore.RED}Invalid URL. {Style.RESET_ALL}Please enter a valid URL starting with http:// or https://, and do not put a / at the end.")
+        panel_url = input("--::>").strip() # Validated Input
         
     if panel_url.endswith("/"):
         panel_url = panel_url[:-1]
@@ -307,7 +407,7 @@ def setup_wizard():
     admin_api_key=""
     times_wrong=0
     while not admin_api_key.startswith("ptlc_"):
-        admin_api_key = input("--::>").strip()
+        admin_api_key = input("--::>").strip() # Validated Input
         if admin_api_key.startswith("ptla_"):
 
             if times_wrong>=2:
@@ -333,7 +433,7 @@ def setup_wizard():
     times_wrong=0
     api_key=""
     while not api_key.startswith("ptla_"):
-        api_key = input("--::>").strip()
+        api_key = input("--::>").strip() # Validated Input
         if api_key.startswith("ptlc_"):
 
             if times_wrong>=2:
@@ -362,9 +462,8 @@ def setup_wizard():
             
     
     logging.info("ENV file saved successfully.")
-    banner()
-    logging.info("Setup complete on Setup Wizard")
-    pt.panel(size=50,center=True,title="Setup Complete", content=["Setup is complete!","You can now run Wingspan and use its features.","Close this window and run script again"],border_bold=True,color="green")
+    
+    
     load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
     global HEADERS
     HEADERS = {
@@ -372,6 +471,15 @@ def setup_wizard():
     'Accept': 'Application/vnd.pterodactyl.v1+json'
     }
     
+    
+    banner()
+    pt.panel(size=70,center=True,title="Power On Self Test", content=["Triggering Power On Self Test (POST)", "If there are any issues in your setup, POST would detect those."],border_bold=True,color="cyan")
+    power_on_self_test()
+    banner()
+    logging.info("Setup complete on Setup Wizard")
+    pt.panel(size=50,center=True,title="Setup Complete", content=["Setup is complete!","You can now run Wingspan and use its features."],border_bold=True,color="green")
+    time.sleep(3)
+
 # ---------------------------------------------------------------------------
 # LOGGING
 # ---------------------------------------------------------------------------
@@ -395,10 +503,9 @@ def log_action(level, action, server_id, server_name, before=None, after=None):
 # ---------------------------------------------------------------------------
 def api_request(method, endpoint, data=None):
     """
-    Generic wrapper around urllib for talking to the Pterodactyl API.
+    Generic wrapper around requests for talking to the Pterodactyl API.
     - method: "GET", "PATCH", "POST", "DELETE"
     - endpoint: e.g. "/api/application/servers"
-    - config: dict from load_config()
     - data: dict to send as JSON body (for PATCH/POST)
 
     Should set headers:
@@ -406,52 +513,54 @@ def api_request(method, endpoint, data=None):
         Content-Type: application/json
         Accept: Application/vnd.pterodactyl.v1+json
 
-    Return parsed JSON response (dict), or None on failure.
-    Handle urllib.error.HTTPError / URLError and print a useful message.
-    TODO: implement
-    """
+    Return parsed JSON response (dict), or suitable error on failure."""
     logging.info(f"API Request: {method} {endpoint} with data: {data}")
     req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
     tries=0
-    while req.status_code==429 and tries<10:
+    while req.status_code==429:
+        if tries>=5:
+            print(f"Rate Limited.. Tried {tries} times, but still rate limited. Exiting..")
+            logging.warning(f"Rate Limited.. Tried {tries} times, but still rate limited. Exiting..")
+            return None,req.status_code
         tries+=1
         print(f"Rate Limited.. Trying after {5*tries} Seconds..")
         logging.warning(f"Rate Limited.. Trying after {5*tries} Seconds..")
         time.sleep(5*tries)
         req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
 
-    if str(req.status_code).startswith("2"):
+    if req.status_code in [200,201,204] and not req.text.strip(): # Case of successful receive WITHOUT data
+        logging.info(f"Successful API Request {method} to {endpoint}. No data received.")
+        return {}, req.status_code
+    
+    
+    elif req.status_code in [200,201,204]: # Case of successful receive WITH data
+        logging.info(f"Successful API Request {method} to {endpoint} with data received.")
         return req.json(),req.status_code
-    elif str(req.status_code).startswith("4") or str(req.status_code).startswith("5"):
-        return None,req.status_code
 
-def get_servers(limit=None):
-    logging.info(f"Getting Servers with limit {limit}")
-    if limit==None:
+    elif req.status_code in [400]: # Wingspan API Path had some errors or used wrong request type
+        logging.error(f"Bad Request: {req.text}\n The above error is probably an issue with Wingspan, please submit it at the Wingspan GitHub repository.")
+        print(f"{Fore.RED}{Style.BRIGHT}Bad Request: {req.text}\n The above error is probably an issue with Wingspan, please submit it at the Wingspan GitHub repository.")
+        time.sleep(2)
+        raise(RuntimeError)
+    
+    elif req.status_code in [401,403]:
+        logging.critical("The API Key does not have enough permissions to execute this command.")
+        print(f"{Fore.RED}{Style.BRIGHT}The API Key does not have enough permissions to execute this command, Ensure your api key has Read/Write permissions.\nIf you are using Demo Mode, this function would not work.")
+        raise(PermissionError)
+    
+    elif req.status_code in [404]:
+        logging.error(f"Error {req.status_code} for endpoint {endpoint}.")
+        return {}, req.status_code
         
-        page=1
-        data={'per_page': 200,'page':page}
-        req,status=api_request("GET","/api/application/servers",data=data)
-        
-        
-        if req and status==200:
-            server_list=req
-            total_pages=server_list["meta"]["pagination"]["total_pages"]
-            if total_pages==1:
-                return server_list
-
-            else:
-                data={'per_page': 200*total_pages,'page':page}
-                req,status=api_request("GET","/api/application/servers",data=data)
-                if req and status==200:
-                    return req.json()
-        else:
-            print(f"Error while getting servers list at get_servers() : {status}")  
-            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
+    elif req.status_code in [422,500,502]:
+        logging.critical("Issue detected in pterodactyl installation. Cant resume.")
+        print(f"{Fore.RED}{Style.BRIGHT}There are issues in your pterodactyl installation. This is not an issue of Wingspan. Exiting..")
+        raise(RuntimeError)
         
     else:
-        data={'per_page': limit}
-        api_request("GET", "/api/application/servers", data=data)
+        logging.error(f"Running API Request {method} on {endpoint} game unknown error {req.status_code}. Cancelling Process...")
+        raise(RuntimeError)
+        
 
 def flatten_dict(d):
     flat = {}
@@ -467,6 +576,7 @@ def flatten_dict(d):
 # ---------------------------------------------------------------------------
 
 def server_selector(stdscr, server_list, headers, all_selected=False):
+    logging.debug("Launching Server Selector..")
     ANSI_RE = re.compile(r'\x1b\[([0-9;]*)m')
     ANSI_TO_CURSES = {
         30: curses.COLOR_BLACK, 31: curses.COLOR_RED, 32: curses.COLOR_GREEN,
@@ -622,77 +732,91 @@ def server_selector(stdscr, server_list, headers, all_selected=False):
 def home_page():
     """
     Display a simple terminal UI with options to:
-    - List servers
-    - Bulk resize
+    - Search/Index Servers
+    - Purge Servers/Users
     - Bulk power actions
     - Bulk suspend/unsuspend
     - Bulk purge
     - Bulk reinstall
+    - Setup Menu
     - Exit
     Use input() to get user choice and call the appropriate function."""
-
-    
-    banner(animation=True)
-    pt.panel(size=60,center=False,title="HomePage [/]", content=["1. Search and Info","2. Purge","3. Power Actions","4. Suspension Manager", "5. Bulk Resource Change","6. Bulk Reinstall","S. Run Setup Again","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-    try:
-        home_inp = input("--::> ")
-    except KeyboardInterrupt:
-        exit()
-        
-    #if home==
+    logging.info("User at Homepage")
 
     while True:
-        
+    
+        banner(animation=True)
+        pt.panel(size=60,center=False,title="HomePage [/]", content=["1. Search and Info","2. Purge","3. Power Actions","4. Suspension Manager", "5. Bulk Resource Change","6. Bulk Reinstall","S. Run Setup Again","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
+        try:
+            home_inp = input("--::> ") # Validated Input
+        except KeyboardInterrupt:
+            exit()
+            
+            
         if home_inp=="1":
+            logging.info("User at Search and Info [1/]")
             banner()
             pt.panel(size=60,center=False,title="HomePage [/search-and-info/]", content=["1. Search Server [Search from Parameters]","2. Server Info [Get info from IDs]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-            inp=input("--::> ").strip()
+            inp=input("--::> ").strip() # Validated Input
             if inp=="1":
+                logging.info("User at Search Server [1/1]")
                 search_server()
-                #break
             elif inp=="2":
+                logging.info("User at Server Info [1/2]")
                 server_info()
-                #break
             elif inp.lower()=="h":
-                home_page()
-                break
+                return
+                
             else:
+                logging.info("User entered incorrect input at Homepage.")
                 print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
                 time.sleep(5)
                 continue
         
         elif home_inp=="2":
+            logging.info("User at Purge Function [2/]")
             banner()
-            pt.panel(size=60,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers]","2. Purge Users [Permanently Delete Users]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
-            inp=input("--::> ").strip()
+            pt.panel(size=70,center=False,title="HomePage [/purge/]", content=["1. Purge Servers [Permanently Delete Servers From Importlist]","2. Purge Users [Permanently Delete Users]","3. Keyword Purge [Delete Servers without a keyword in name]","H. Go Home","Ctrl+C. Exit"],border_bold=True,color="cyan", center_content=False)
+            inp=input("--::> ").strip() # Validated Input
             if inp=="1":
+                logging.info("User selected Server Purge [2/1]")        
                 purge_srv()
-                #break
             elif inp=="2":
+                logging.info("User selected Purge Users [2/2]")
                 purge_users()
-                #break
-            elif inp.lower()=="h":
-                home_page()
-                break
+            elif inp=="3":
+                logging.info("User selected Keyword Purge [2/3]")
 
+                keyword_server_purge()
+            elif inp.lower()=="h":
+                return
             else:
+                logging.info("User entered incorrect input at Homepage.")
                 print(f"{Fore.RED}{Style.BRIGHT}Incorrect input entered or some error occurred, Please Re-Enter values correctly.")
                 time.sleep(5)
                 continue
                 
         elif home_inp.lower()=="s":
+            logging.debug("User opened setup menu from homepage [s/]")
             setup_wizard()
             
             
         elif home_inp in ["3","4","5","6"]:
+            logging.debug(f"User accessed function {home_inp}, which is not yet released.")
             banner()
             pt.panel(size=60,center=False,title="HomePage [/coming-soon/]", content=["This feature is coming soon!","Please check back later."],border_bold=True,color="cyan", center_content=False)
             time.sleep(5)
             
-        home_page()
+        else:
+            pt.panel(size=60,center=False,title="HomePage [/homepage/invalid-input]",
+                     content=["Invalid Input!","Please try again."],border_bold=True,color="cyan", center_content=False)
+            time.sleep(2)
+            continue
 
 def server_info():
     # This function has a lot of AI use because it involves very complex GUI and formatting, which is not achievable by hand.
+    
+    logging.debug("Opened Server Info")
     banner()
     print(f"Enter the numerical {Fore.GREEN}Server ID{Fore.RESET} to get all related information.")
 
@@ -701,7 +825,7 @@ def server_info():
 
     def app_get(endpoint, params=None):
         try:
-            out = api_request("GET", endpoint, data=params)
+            out = api_request("GET", endpoint, data=params) # Validated API REQ
         except Exception as e:
             logging.error(f"server_info app_get {endpoint}: {e}")
             return None, str(e)
@@ -748,12 +872,16 @@ def server_info():
         return None, reasons.get(r.status_code, f"HTTP {r.status_code}")
 
     while True:
-        raw_id = input("--::>").strip()
+        raw_id = input("--::>").strip() # Validated Input
+        logging.info(f"Trying to get server info for ID {raw_id}")
+
         if raw_id.lower() in ("q", "quit", "exit", "h", "back"):
+            logging.debug("User returned to homepage from Server Info.")
             return
         try:
             server_id = int(raw_id)
         except Exception:
+            logging.info("User entered invalid input at Server Info.")
             print(f"{Fore.RED}{Style.BRIGHT}That is not a numeric server ID. Try again.")
             time.sleep(1.5)
             continue
@@ -1956,7 +2084,7 @@ def server_info():
                 print(json.dumps(payload, indent=2, default=str))
             except Exception:
                 print(payload)
-            input("Press Enter to continue...")
+            input("Press Enter to continue...") # UNVALIDATED INPUT
 
         banner()
         print(f"Enter the numerical {Fore.GREEN}Server ID{Fore.RESET} to get all related information. Enter {Fore.GREEN}'h'{Fore.RESET} to return to homepage")
@@ -1965,25 +2093,30 @@ def server_info():
 # Data Processing 
 # ---------------------------------------------------------------------------
 
-def get_importlist(inp1=None,function="/", retry=True,verify=True):
-    
-    logging.debug("Fetching import list from user input.")
+def get_importlist(inp1=None,function="/", retry=True,verify=True,fn_name="Server Purge"):
+    logging.info(f"Fetching import list for function {fn_name} from file {inp1}")
     while True:
         if inp1 is None:
             banner()
-            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}Server Purge{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,", f"{Style.DIM}Please pass blank input to open Search and Info.", f"{Style.DIM}Enter h to go to the homepage"], border_bold=True, color="red")
-            inp1 = input("--::> ")
+            pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}Welcome to {Fore.RED}{fn_name}{Fore.CYAN}, Please enter a File-Name to Import.", f"{Style.DIM}If you have not yet created an export file,", f"{Style.DIM}Please pass blank input to open Search and Info.", f"{Style.DIM}Enter h to go to the homepage"], border_bold=True, color="red")
+            inp1 = input("--::> ") # Validated Input
             if inp1 == "":
                 banner()
-                pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}You have chosen to open {Fore.RED}Search and Info{Fore.CYAN}.", f"{Style.DIM}Please use the search feature to find servers and export them to a file.", f"{Style.DIM}Once you have exported a file, you can import it here."], border_bold=True, color="red")
+                pt.panel(size=80, center=False, title=f"{function}import-list/", content=[f"{Fore.CYAN}You have chosen to open {Fore.RED}Search and Info{Fore.CYAN}.", f"{Style.DIM}Please use the search feature to find servers and export them to a file.", f"{Style.DIM}Once you have exported a file, you can import it here."], border_bold=True, color="red")
+                logging.info("Opening search server from get_importlist.")
+                time.sleep(7)
                 search_server()
+            
+
         elif inp1.lower() == "h":
-            home_page()
+            logging.info("User returned to homepage from get_importlist function.")
+            while True:
+                home_page()
         else:
             if not inp1.endswith(".csv"):
                 path = inp1 + ".csv"
                 if os.path.isfile(inp1 + ".csv"): 
-                    
+                    logging.debug(f"File {inp1} does not have extension, matched it with csv. File in root folder")
                     with open(path, "r") as s:  # Open and check
                         content = list(csv.reader(s))
                         
@@ -2002,7 +2135,7 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                         elif content[0][0] != os.getenv("panel_url") and verify and content[0][0].startswith("http"):
                             logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
                             pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.", f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"], border_bold=True, color="red")
-                            inp = input("--:(y/N):> ")
+                            inp = input("--:(y/N):> ") # Validated Input
                             if inp.lower() == "y":
                                 selected_list=curses.wrapper(
                                     server_selector,
@@ -2018,7 +2151,7 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                         elif content[0][0] != os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
                             logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
                             pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}No panel reference found in imported CSV.", f"{Style.DIM}This process may be destructive. Do you want to proceed? "], border_bold=True, color="red")
-                            inp = input("--:(y/N):> ")
+                            inp = input("--:(y/N):> ") # Validated Input
                             if inp.lower() == "y":
                                 selected_list=curses.wrapper(
                                     server_selector,
@@ -2064,6 +2197,8 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                             return None
             #Ends with CSV Extension
             else:
+                logging.debug(f"File {inp1} already has extension, matched it with csv.folder")
+
                 path = inp1
                 if os.path.isfile(inp1): 
                     
@@ -2085,7 +2220,7 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                         elif content[0][0] != os.getenv("panel_url") and verify and content[0][0].startswith("http"):
                             logging.error(f"Import file with path {inp1} found in csv but panel URL does not match.")
                             pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}This export file has been exported from another panel.", f"{Fore.RED}This process may be destructive.", f"{Style.BRIGHT}Do you want to proceed?", f"{Style.DIM}This list was exported from {content[0][0]}"], border_bold=True, color="red")
-                            inp = input("--:(y/N):> ")
+                            inp = input("--:(y/N):> ") # Validated Input
                             if inp.lower() == "y":
                                 selected_list=curses.wrapper(
                                         server_selector,
@@ -2102,7 +2237,7 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                         elif content[0][0] != os.getenv("panel_url") and verify and not content[0][0].startswith("http"):
                             logging.error(f"Import file with path {inp1} found in csv but no panel URL was given. Please check before execution.")
                             pt.panel(size=70, center=False, title=f"{function}import-list/", content=[f"{Fore.RED}{Style.BRIGHT}No panel reference found in imported CSV.", f"{Style.DIM}This process may be destructive. Do you want to proceed? "], border_bold=True, color="red")
-                            inp = input("--:(y/N):> ")
+                            inp = input("--:(y/N):> ") # Validated Input
                             if inp.lower() == "y":
                                 selected_list=curses.wrapper(
                                         server_selector,
@@ -2149,6 +2284,7 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True):
                             return None
 
 def export_list(servers,filepath,HEAD=None):
+    logging.info(f"Creating Export {filepath} with {len(servers)} servers.")
     filepath = os.path.join(PROJECT_ROOT, filepath)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
@@ -2158,26 +2294,55 @@ def export_list(servers,filepath,HEAD=None):
         for srv in servers:
             writer.writerow(srv)
 
-def server_filter(server_list:dict,header):
-    
-    if not header:
-        header=list(server_list["data"][0]["attributes"].keys())
-    
-    server_data=[]
-    for i in range(server_list["meta"]["pagination"]["count"]):
+def get_servers(limit=None):
+    logging.info(f"Getting Servers with limit {limit}")
+    if limit==None: # Get all servers available
+        
+        page=1
+        data={'per_page': 200,'page':page}
+        try:
+            req,status=api_request("GET","/api/application/servers",data=data)
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+            return
+        
+        if req and status==200:
+            server_list=req
+            total_pages=server_list["meta"]["pagination"]["total_pages"]
+            if total_pages==1:
+                logging.info(f"Server Fetch Successful {status}")
+                return server_list
 
-        server_data.append(server_list["data"][i]["attributes"])
-
-
-    server_final=[]
-    for i in server_data:
-        server_row=[]
-        for h in header:
-            server_row.append(i.get(h))
-        server_final.append(server_row)
-
-    return(server_final)
-
+            else:
+                data={'per_page': 200*total_pages,'page':page}
+                req,status=api_request("GET","/api/application/servers",data=data)
+                if req and status==200:
+                    logging.info(f"Server Fetch Successful {status}")
+                    return req.json()
+                else:
+                    print(f"Error while getting servers list at get_servers() : {status}")  
+                    logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status},Pages: {total_pages}")
+        else:
+            print(f"Error while getting servers list at get_servers() : {status}")  
+            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
+        
+    else: # If user specified a limit of servers.
+        data={'per_page': limit}
+        req,status=api_request("GET", "/api/application/servers", data=data)
+        if req and status==200:
+            server_list=req
+            total_pages=server_list["meta"]["pagination"]["total_pages"]
+            if total_pages==1:
+                logging.info(f"Server Fetch Successful {status}")
+                return server_list
+            else:
+                logging.info(f"Too high limit, Unable to fit {limit} servers.")
+                
+        else:
+            print(f"Error while getting servers list at get_servers() : {status}")  
+            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
+            
 # ---------------------------------------------------------------------------
 # Feature Functions 
 # ---------------------------------------------------------------------------
@@ -2189,8 +2354,9 @@ def search_server():
     except IndexError:
         print(f"{Fore.RED}{Style.BRIGHT}You dont have any servers on the Panel, or wingspan had an error fetching them. Sending you back to the homepage.")
         time.sleep(5)
-        home_page()
-        return
+        while True:
+            home_page()
+
     converted=1
     while converted!=0:
         converted=0
@@ -2221,7 +2387,6 @@ def search_server():
         for j in i:
             parameters_filter.append(j)
     
-    #servers_parametered=server_filter(server_list,parameters_filter)
     servers_filtering_list=server_list["data"]
     total_servers=len(servers_filtering_list)
     # -------------------Asking Answers to filters----------------------
@@ -2266,7 +2431,8 @@ def search_server():
             while True:
                 banner()
                 pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}add a range{Fore.RESET} like this: {Fore.GREEN}30-100","",f"You can also {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma","",f"Like this: {Fore.GREEN}5,8,50-60,12","",f"{Fore.RED}Refer to docs for advanced search info",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
+                inp=input("--::> ") # Validated Input
+                
                 value=""
                 # Spaces remove
                 for i in inp:
@@ -2408,7 +2574,7 @@ def search_server():
             while True:
                 banner()
                 pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Enter {Fore.GREEN}yes{Fore.RESET} or {Fore.GREEN}no",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
+                inp=input("--::> ") # Validated Input
                 value=""
                 for i in inp:
                     if i != " ":
@@ -2440,7 +2606,7 @@ def search_server():
             while True:
                 banner()
                 pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Date Range for {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"Format: {Fore.GREEN}YYYY-MM-DD,YYYY-MM-DD","",f"Like this: {Fore.GREEN}2024-01-01,2025-01-01","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
+                inp=input("--::> ") # Validated Input
                 value=""
                 for i in inp:
                     if i != " ":
@@ -2499,7 +2665,7 @@ def search_server():
             while True:
                 banner()
                 pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}[{len(servers_filtering_list)} / {total_servers} servers remaining]",f"Enter Value of {Fore.GREEN}{current_parameter}{Fore.RESET} Parameter",f"You can {Fore.GREEN}combine selections{Fore.RESET} with a {Fore.GREEN}comma{Fore.RESET} (matches ANY of them)","",f"Use {Fore.GREEN}*{Fore.RESET} or {Fore.GREEN}%{Fore.RESET} as a wildcard, like {Fore.GREEN}node*{Fore.RESET} or {Fore.GREEN}*test*","",f"Wrap in {Fore.GREEN}/../{Fore.RESET} for raw regex, like {Fore.GREEN}/^py.*js$/","",f'Wrap in {Fore.GREEN}"..."{Fore.RESET} for a literal value, like {Fore.GREEN}"node*"{Fore.RESET} (ignores * and /)',"",f"Like this: {Fore.GREEN}suspended,py*","",f"{Fore.YELLOW}{Style.DIM}Enter empty to bypass this filter"],border_bold=True,color="cyan")
-                inp=input("--::> ")
+                inp=input("--::> ") # Validated Input
                 
                 if inp=="":
                     break
@@ -2577,9 +2743,7 @@ def search_server():
         return
     else:
         banner()
-#        print(f"{Fore.GREEN}Matched {len(servers_filtering_list)} / {total_servers} server(s).{Fore.RESET}\nPlease select the servers you want to export from the next menu.")
-#        input("Press Enter to continue...")
-        
+
         selected_rows = curses.wrapper(
             server_selector,
             server_list=[[flatten_dict(srv["attributes"]).get("id"), flatten_dict(srv["attributes"]).get("name")] for srv in servers_filtering_list],
@@ -2599,10 +2763,10 @@ def search_server():
         banner()
         pt.panel(size=70,center=False,title="/search-and-info/info/export", content=[f"Would you like to {Fore.GREEN}Export{Fore.RESET} the server list? ({len(servers_filtering_list)} Servers)","After exporting, you could use the list for other functions.","",f'Enter "{Fore.GREEN}y{Fore.RESET}" to export or "{Fore.GREEN}n{Fore.RESET}" to skip'],border_bold=True,color="cyan")
         while True:
-            inp=input("--::>")
+            inp=input("--::>") # Validated Input
             if inp.lower() in ("y","yes"):
                 pt.panel(size=70,center=False,title="/search-and-info/info/export", content=["Please enter a name for your export.",f"{Fore.GREEN}Enter this name to Re-Import this list in a function!{Fore.RESET}","You can access the export file in the exports folder","in this file's root dir, unless you enter a complete path."],border_bold=True,color="cyan")
-                export_name=input("--::> ").strip()
+                export_name=input("--::> ").strip() # Universal Acceptor Input | Validated Input
                 if export_name=="":
                     export_name="export.csv"
                 
@@ -2617,7 +2781,7 @@ def search_server():
                 banner()
                 
                 export_list(servers_filtering_list,export_name+".csv",HEAD=[os.getenv("panel_url")])
-                print(f"{Fore.GREEN}Exported {len(servers_filtering_list)} servers to {export_name}.csv successfully. Returning to Homepage.")
+                print(f"{Fore.GREEN}Exported {len(servers_filtering_list)} servers to {export_name}.csv successfully.")
                 time.sleep(5)
                 return
             elif inp.lower() in ("n","no"):
@@ -2628,17 +2792,18 @@ def search_server():
                 continue
 
 def purge_srv():
-    importlist=get_importlist(function="/purge/server-purge/", retry=True)
+    """Function to bulk delete servers from an importlist"""
+    importlist=get_importlist(function="/purge/server-purge/", retry=True, fn_name="Server Purge")
     while True:
         banner()
         pt.panel(size=70,center=False,title="/purge/server-purge/confirmation", content=[f"{Fore.MAGENTA}{Style.BRIGHT}You have chosen to purge {len(importlist)} servers.",f"{Fore.RED}This process is irreversible and will delete all selected servers!","Press Y to confirm, N to Cancel, E to edit selection"],border_bold=True,color="red")
-        inp=input("--:(y/N/e):> ")
+        inp=input("--:(y/N/e):> ") # Validated Input
         if inp.lower()=="y":
             break
         elif inp.lower()=="e":
             importlist=get_importlist(function="/purge/server-purge/", retry=True)
             continue
-        elif inp.lower()=="n":
+        else:
             pt.panel(size=70,center=False,title="/purge/server-purge/cancelled", content=[f"{Fore.RED}{Style.BRIGHT}Server purge cancelled. Returning to homepage."],border_bold=True,color="green")
             time.sleep(5)
             return
@@ -2648,7 +2813,7 @@ def purge_srv():
     pt.panel(size=70,center=False,title="/purge/server-purge/confirm", content=[f"{Fore.RED}{Style.BRIGHT}This action would DELETE {len(importlist)} Servers.", f"{Fore.RED}This process is irreversible and will delete all selected servers."],border_bold=True,color="red")
     while True:
         try:
-            inp=int(input(f"--:(Enter {len(importlist)} to confirm):> "))
+            inp=int(input(f"--:(Enter {len(importlist)} to confirm):> ")) # Validated Input
             if inp == len(importlist):
                 break
             else:
@@ -2659,9 +2824,9 @@ def purge_srv():
             print(f"{Fore.RED}Invalid input. Please enter a valid number.")
     banner()
     
-    pt.panel(size=70,center=False,title="/purge/server-purge/prompt", content=[f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}F{Fore.BLUE} for {Fore.RED}Force Delete{Style.RESET_ALL}",f"{Fore.BLUE}{Style.BRIGHT}Enter {Style.BRIGHT}{Fore.RED}S{Fore.BLUE}{Style.BRIGHT}for {Fore.RED}{Style.BRIGHT} Standard Delete",
+    pt.panel(size=70,center=False,title="/purge/server-purge/prompt", content=[f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}F{Fore.BLUE} for {Fore.RED}Force Delete{Style.RESET_ALL}",f"{Fore.BLUE}{Style.BRIGHT}Enter {Style.BRIGHT}{Fore.RED}S{Fore.BLUE}{Style.BRIGHT} for {Fore.RED}{Style.BRIGHT} Standard Delete",
             f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}U{Fore.BLUE} for {Fore.RED}Unverified Standard Delete{Style.RESET_ALL}",f"{Fore.BLUE}{Style.BRIGHT}Enter {Fore.RED}UF{Fore.BLUE} for {Fore.RED}Unverified Force Delete{Style.RESET_ALL}",f"{Style.DIM}Any other value would lead to cancellation."],border_bold=True,color="red")
-    inp=input("--:(F/S):> ")
+    inp=input("--:(F/S/U/UF):> ") # Validated Input
     if inp.lower()=="f":
         forcedel=True
         unverified=False
@@ -2689,23 +2854,26 @@ def purge_srv():
     
     banner()
     failed=0
-    
+    skipped=0
     passed=0
     for i in importlist:
         name=i[1]
-        id=i[0]
-        
-        if id not in serverdict.keys():
+        id=int(i[0])
+        if not (id in serverdict):
             pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.RED}{Style.BRIGHT}Server ID: {id}, Name: {name}",f"{Fore.RED}{Style.BRIGHT}Not found on Panel. Skipping..."],border_bold=True,color="red")
+            skipped+=1
             time.sleep(2)
             continue
 
         elif name != serverdict[id] and not unverified:
-            pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.BLUE}{Style.BRIGHT}Server ID {id} has name {Fore.RED}{serverdict[id]}{Fore.BLUE}{Style.BRIGHT} on Panel",f"{Fore.BLUE}{Style.BRIGHT}Instead of {serverdict[id]} as per exportfile",f"{Style.DIM}Should this server be deleted?"],border_bold=True,color="red")
-            inp=input("--:(y/N):> ")
-            if inp.lowerp=="y":
+            pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.BLUE}{Style.BRIGHT}Server ID {id} has name {Fore.RED}{serverdict[id]}{Fore.BLUE}{Style.BRIGHT} on Panel",f"{Fore.BLUE}{Style.BRIGHT}Instead of {Fore.GREEN}{Style.BRIGHT}{name}{Fore.BLUE}{Style.BRIGHT} as per exportfile",f"{Style.DIM}Should this server be deleted?"],border_bold=True,color="red")
+            inp=input("--:(y/N):> ") # Validated Input
+            
+            if inp.lower()=="y":
+                
                 pass
             else:
+                skipped+=1
                 continue
         
     
@@ -2713,12 +2881,19 @@ def purge_srv():
             dt={'force':True}
         else:
             dt=None
-        r,status=api_request("DELETE",f"/api/application/servers/{id}",data=dt)
-        if r==None or not status.startswith(2):
+        
+        try:
+            r,status=api_request("DELETE",f"/api/application/servers/{id}",data=dt)
+            status=str(status)
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+            return
+        if r==None or not status.startswith('2'):
             logging.error(f"Purge: Unable to delete server with ID: {id}; Name: '{name}'; Error: {status} ; Response: {r}")
             failed+=1
             if not unverified:
-                print(f"\r{Fore.RED}{Style.BRIGHT}❎ UNABLE TO DELETE SERVER WITH ID {Fore.BLUE}{id}{Fore.RED}.")
+                print(f"\r{Fore.RED}{Style.BRIGHT}❎ UNABLE TO DELETE SERVER WITH ID {Fore.BLUE}{id}{Fore.RED} - {status}.")
                 time.sleep(2)
         else:
             logging.info(f"Purge: Deleted server with ID: {id}; Name: '{name}' succesfully!")
@@ -2726,19 +2901,354 @@ def purge_srv():
             if not unverified:
                 print(f"\r{Fore.RED}{Style.BRIGHT}✅ Deleted Server {id} - {name}") #Its not AI, I put the " - " myself.
     banner()           
-    pt.panel(size=70,center=False,title="/purge/server-purge/complete", content=[f"{Fore.GREEN}{Style.BRIGHT}Purge Complete!",f"{Style.BRIGHT}{Fore.RED}Failed: {Style.GREEN}{failed}{Fore.RED}{Style.BRIGHT}, Passed: {Style.GREEN}{passed}",f"{Style.DIM}Press Enter to move to Homepage."],border_bold=True,color="blue")
-    input()
+    pt.panel(size=70,center=False,title="/purge/server-purge/complete", content=[f"{Fore.GREEN}{Style.BRIGHT}Purge Complete!",f"{Style.BRIGHT}{Fore.RED}Failed: {Fore.GREEN}{failed}{Fore.WHITE},{Fore.RED}{Style.BRIGHT} Passed: {Fore.GREEN}{passed}{Fore.WHITE},{Fore.RED}{Style.BRIGHT}Skipped: {Fore.GREEN}{skipped}{Style.RESET_ALL}",f"{Style.DIM}Press Enter to move to Homepage."],border_bold=True,color="green")
+    input() # Dummy Input
     return
    
 def purge_users():
-    pt.panel(size=70,center=False,title="/search-and-info/inputs", content=[f"{Fore.MAGENTA}{Style.BRIGHT}Thats a thing for the next ship/update!"],border_bold=True,color="cyan")
-    time.sleep(5)
+    banner()
+    pt.panel(size=70,center=True,title="/purge/user-purge/loading",
+        content=[f"{Fore.MAGENTA}{Style.BRIGHT}Loading Users...",f"{Fore.MAGENTA}{Style.BRIGHT}Please wait..."],border_bold=True,color="cyan")
+
+    try:
+        # DO initial api req to get starting data + meta info
+        r,status=api_request('GET','/api/application/users?include=servers&per_page=100')
+    except Exception as e:
+        print(e)
+        time.sleep(5)
+        return
+    if r != {} and str(status).startswith('2'):
+        usrdata=r['data']
+    
+    else:
+        print(f"{Style.BRIGHT}{Fore.RED}Error with Pterodactyl. Check your installation.")
+        
+    if r['meta']['pagination']['total_pages']>1: # If more data is there instead of the 100 users above, we go through each page.
+        for i in range(2,int(r['meta']['pagination']['total_pages'])+1):
+            try:
+                r,status=api_request('GET',f'/api/application/users?include=servers&per_page=100&page={i}')
+            except Exception as e:
+                print(e)
+                time.sleep(5)
+                return
+            if r != {} and str(status).startswith('2'):
+                usrdata+=r['data']
+            
+            else:
+                print(f"{Style.BRIGHT}{Fore.RED}Error with Pterodactyl. Check your installation.")
+                time.sleep(2)
+                exit()
+    usr_server=[]
+    usr_noserver=[]
+    admin_nosrv=[]
+    user_list=[]
+    for i in usrdata:
+        if i["attributes"]['relationships']['servers']['data']==[]:
+            usr_noserver.append(i['attributes']['id'])
+            user_list.append([i['attributes']['id'],i['attributes']['username']])
+            if i['attributes']['root_admin']==True:
+                admin_nosrv.append(i['attributes']['id'])
+                
+        else:
+            usr_server.append(i['attributes']['id'])
+            
+            
+
+    while True:
+
+        banner()
+        pt.panel(size=70,center=False,title="/purge/user-purge/info",
+            content=[f"{Fore.MAGENTA}{Style.BRIGHT}Welcome to User Purge!",f"{Fore.BLUE}{Style.BRIGHT}Users with Server: {len(usr_server)}",f"{Fore.BLUE}{Style.BRIGHT}Users without Server: {len(usr_noserver)}",f"{Style.DIM}Would you like to delete all users with no servers?"],border_bold=True,color="cyan")
+
+        inp=input("--:(y/N):>") # Validated Input
+        if inp.lower()=="y":
+            break
+        elif inp.lower()=="n":
+            pt.panel(size=70,center=False,title="/purge/user-purge/cancelled",content=[f"{Fore.RED}{Style.BRIGHT}Purge Cancelled.. Returning to Homepage."])
+            time.sleep(5)
+            return
+        else:
+            print(f"{Fore.RED}Invalid Input. Please enter Y for yes and N for no.")
+            time.sleep
+            continue
+            
+    if len(usr_noserver)==0:
+        pt.panel(size=70,center=False,title='/purge/user-purge/complete',content=[
+            f"{Fore.RED}There are no users to delete.", "Exiting User Purge, Returning to Homepage."],border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    edit=True
+    while True:
+        
+        admins_found=False
+        deladmin=False
+        
+        if edit:
+            selected_list=curses.wrapper(
+                        server_selector,
+                        server_list=list(user_list),
+                        headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                        all_selected=True,
+                    )
+            banner()
+            if selected_list==[] or selected_list==None:
+                pt.panel(size=70,center=False,title="/purge/user-purge/input",
+                content=[f"{Fore.RED}Please select atleast one user to proceed.","Taking you back to Selection..."],border_bold=True,color="cyan")
+                time.sleep(3)
+                edit=True
+                continue
+            
+            edit=False
+            
+        banner()
+        
+        inp=""
+        
+        for i in selected_list:
+            if int(i[0]) in admin_nosrv and not deladmin:
+                pt.panel(size=70,center=False,title="/purge/user-purge/input",
+                content=[f"{Fore.RED}There are admin users in the selection you are about to delete!",f"{Fore.RED}Do you wish to delete selected admin accounts?", f"Enter {Fore.RED}y{Style.RESET_ALL} for yes, {Fore.RED}n{Style.RESET_ALL} for no, {Fore.RED}e{Style.RESET_ALL} for editing selection"],border_bold=True,color="cyan")
+                while True:
+                    inp=input("--:(y/n/e):>") # Validated Input
+                    if inp.lower() not in ["y","n","e"]:
+                        print(f"{Style.RED}Invalid Input! Please enter from above options.")
+                    else:
+                        break        
+                admins_found=True
+                break
+
+        if admins_found:
+            if inp.lower()=='e':
+                edit=True
+                continue
+            elif inp.lower()=='y':
+                deladmin=True
+                break
+            elif inp.lower()=='n':
+                for i in selected_list:
+                    id=i[0]
+                    if int(id) in admin_nosrv:
+                        selected_list.remove(i) 
+            else:
+                print(f"{Fore.RED}Invalid Input. Please try again.")
+                break
+        else:
+            break
+    
+    user_number=len(selected_list)
+    
+    if user_number==0:
+        pt.panel(size=70,center=False,title='/purge/user-purge/complete',content=[
+            f"{Fore.RED}There are no users to delete.", "Exiting User Purge, Returning to Homepage."],border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    banner()
+    pt.panel(size=70,center=False,title='/purge/user-purge/confirm',content=[
+        f"{Fore.RED}{Style.BRIGHT}You are about to delete {user_number} User IDs.", f"{Style.DIM}This action may break pterodactyl addons/billing/clients.",
+        f"{Style.DIM}Are You Sure?"],border_bold=True,color="cyan")
+    
+    inp=input("--:(y/n):>") # Validated Input
+    
+    if inp.lower()!="y":
+        pt.panel(size=70,center=False,title='/purge/user-purge/cancelled',content=[
+        f"{Fore.RED}Purge has been cancelled.",
+        f"{Style.DIM}Returning to Homepage"],
+        border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    
+    banner()
+    pt.panel(size=70,center=False,title='/purge/user-purge/confirmation',content=[
+        f"{Fore.RED}{Style.BRIGHT}You are deleting {user_number} User Accounts.",f"{Fore.RED}Please enter the above value to confirm deletion.",
+        f"{Style.DIM}This action would be permanent and could not be reversed.",f"{Style.DIM}Selected Logged in users would loose access to their accounts."],
+        border_bold=True,color="cyan")
+    while True:
+        try:
+            inp=int(input(f"--:(Enter {user_number} to confirm):>").strip()) # Validated Input
+            break
+        except:
+            pt.panel(size=70,center=False,title='/purge/user-purge/cancelled',content=[
+                f"{Fore.RED}Purge has been cancelled.",
+                f"{Style.DIM}Returning to Homepage"],
+                border_bold=True,color="cyan")
+            time.sleep(5)
+            return
+        
+        
+    if inp!=user_number:
+        pt.panel(size=70,center=False,title='/purge/user-purge/cancelled',content=[
+                f"{Fore.RED}{Style.BRIGHT}Confirmation Failed!",
+                f"{Fore.RED}Purge has been cancelled.",
+                f"{Style.DIM}Returning to Homepage"],
+                border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    success=0
+    failed=0
+    for i in selected_list:
+        try:
+            r,status=api_request("DELETE", f"/api/application/users/{i[0]}")
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+            return
+        if str(status).startswith("2"):
+            print(f"{Fore.BLUE}Deleted User{Fore.GREEN} {i[0]} - {i[1]}")
+            success+=1
+        else:
+            failed+=1
+            print(f"{Fore.RED}{Style.BRIGHT}Failed To Delete User {i[0]} - {i[1]} | {status}")
+    banner()
+    pt.panel(size=70,center=True,title='/purge/user-purge/complete',content=[
+            f"{Fore.GREEN}{Style.BRIGHT}Purge Complete!",
+            f"{Fore.RED}Failed:{Fore.GREEN} {failed}{Style.RESET_ALL} | {Fore.RED}Deleted:{Fore.GREEN} {success}",
+            f"{Style.DIM}Press enter to return to Homepage"],
+            border_bold=True,color="cyan")
+    input()
+    return
+            
+def keyword_server_purge():
+    """
+    This function is specifically dedicated to hosting owners who
+    need to quickly delete servers which doesnt contain a keyword in name
+    """
+
+    keywords=[]
+    
+    while True:
+        """Function to make a list of valid and trustable keywords. By end keywords list would have verified elements."""
+        banner()
+        pt.panel(size=70,center=False,title='/purge/keyword-purge/',content=[
+        f"{Fore.BLUE}{Style.BRIGHT}Welcome to Keyword Purge!",f"{Fore.RED}Please enter the keywords you wish to whitelist.",
+        f"{Style.DIM}Servers with keyword in name or description will not be deleted.",f"{Style.DIM}Enter keywords one by one, Blank Enter to process, h for Homepage."], border_bold=True,color="cyan")
+        
+        if len(keywords)>0:
+            print(f"{Style.BRIGHT}{Fore.CYAN}Added Keywords:{Style.RESET_ALL}",end="")
+            for i in keywords:
+                if len(keywords)==1:
+                    print(f' "{i}"',end="")
+                else:
+                    print(f', "{i}"',end="")
+            print()
+
+        kw=input("--::>").lower()
+        logging.info(f"New keyword added in Keyword Search: {kw}")
+        if kw=='':
+            if len(keywords)<1:
+                print(f"{Fore.RED}You can not proceed unless you add atleast one keyword.")
+                logging.info("User tried proceeding for keyword search without selecting any user.")
+                time.sleep(5)
+                continue #Person tried to continue with empty keywords
+            else:
+                break #All Keywords are done, Start Processing
+            
+        while True:
+            if kw!=kw.strip():
+                print(f"{Fore.RED}Your keyword input contains trailing spaces. Would you like to include those in keyword?")
+                inp=input("--:(y/n):>").lower() # Validated Input
+                logging.debug(f"Keyword input contains trailing spaces {kw}")
+                if inp.lower()=="y":
+                    break
+                elif inp.lower()=="n":
+                    kw=kw.strip()
+                    break
+                else:
+                    print(f"{Fore.RED}Invalid Input. Please enter Y or N.")
+            else:
+                break
+        keywords.append(kw.lower())
+        
+    r=get_servers(limit=None) # Get all available servers
+    servers=r['data']
+    srvdata=[]
+    for i in servers:
+        name=i['attributes']['name'].lower()
+        description=i['attributes']['description'].lower()
+        identifier=i['attributes']['identifier'].lower()
+        id=i['attributes']['id']
+        logging.info(f"Processing Server {name},{id}")
+        for key in keywords:
+            if (not (key in name)) or (not (key in description)): #or (not (key in identifier))
+                logging.info(f"Server with id {id} addddd")
+                srvdata.append([id,name])
+                break
+    
+    
+    if len(srvdata) == 0:
+        banner()
+        pt.panel(size=70,center=False,title='/purge/keyword-purge/cancelled',content=[
+            f"{Fore.RED}{Style.BRIGHT}There are no servers to delete!",
+            f"{Style.DIM}All servers are having keyword.",f"{Style.DIM}Returning to Homescreen."],
+            border_bold=True,color="cyan")
+        logging.info("Total servers to delete were 0. Cancelling user purge.")
+        time.sleep(5) 
+        return
+        
+    banner()
+    pt.panel(size=70,center=False,title='/purge/keyword-purge/confirm',content=[
+        f"{Fore.RED}{Style.BRIGHT}This process deletes servers!",
+        f"{Fore.RED}This could be distructive, do you wish to proceed?."],
+        border_bold=True,color="cyan")
+    
+    inp=input("--:(y/n):>")
+    
+    if inp!="y":
+        pt.panel(size=70,center=False,title='/purge/keyword-purge/cancelled',content=[
+        f"{Fore.RED}{Style.BRIGHT}Confirmation Failed!",
+        f"{Fore.RED}Purge has been cancelled.",
+        f"{Style.DIM}Returning to Homepage"],
+        border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    
+    server_to_del=curses.wrapper(
+                server_selector,
+                server_list=list(srvdata),
+                headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
+                all_selected=True,
+            )
+    
+    banner()
+    pt.panel(size=70,center=False,title='/purge/keyword-purge/confirm',content=[
+        f"{Fore.RED}{Style.BRIGHT}You are about to delete {len(server_to_del)} servers!",
+        f"{Fore.RED}If you wish to proceed, enter the above number.",f"{Style.DIM}This is the Final Confirmation!"],
+        border_bold=True,color="cyan")
+    
+    inp=input(f"--:(Enter {len(server_to_del)} to confirm):>")
+    
+    if inp!=str(len(server_to_del)):
+        pt.panel(size=70,center=False,title='/purge/keyword-purge/cancelled',content=[
+        f"{Fore.RED}{Style.BRIGHT}Confirmation Failed!",
+        f"{Fore.RED}Purge has been cancelled.",
+        f"{Style.DIM}Returning to Homepage"],
+        border_bold=True,color="cyan")
+        time.sleep(5)
+        return
+    
+    for i in server_to_del:
+        try:
+            r,status=api_request("DELETE",f"/api/application/servers/{id}?force=true")
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+            return
+        if status==204:
+            print(f"{Fore.RED}Deleted Server {id}")
+            logging.info(f"Deleted Server with ID {id} from keyword purge.")
+            
+    pt.panel(size=70,center=False,title='/purge/keyword-purge/confirm',content=[
+        f"{Fore.RED}{Style.BRIGHT}Deleted {len(server_to_del)} servers!",
+        f"{Style.DIM}Press Enter to return to Homepage!"],
+        border_bold=True,color="cyan")
+    input()
+    return
 
 # ---------------------------------------------------------------------------
 # PARSER AND RUNNING
 # ---------------------------------------------------------------------------
 
 def build_parser():
+    
     """Build the argparse structure with shared filters and subcommands.
     THIS FUNCTION IS AI BUILT"""
     
@@ -2753,7 +3263,8 @@ def build_parser():
     return parser
 
 def main():
-    """Main execution block mapping arguments to backend functionality."""
+    """Function which loads up all components, does POST,
+    defines logger and builds the command parser."""
     
     parser = build_parser()
     args = parser.parse_args()
@@ -2764,8 +3275,8 @@ def main():
         power_on_self_test()
 #        load_config()
         init_logger()
-        
-        home_page()
+        while True:
+            home_page()
         
     else:    
        # Route immediate commands bypassing infrastructure setup
@@ -2780,5 +3291,3 @@ def main():
 if __name__ == "__main__":
     main()
     
-while True:
-    pass
