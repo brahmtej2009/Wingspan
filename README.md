@@ -101,7 +101,8 @@ Would boot into main dashboard after setup everytime!
 - > **2. User Purge**: 
         
       User based purge, gives ability to delete users who dont have a server. You can choose to delete admins or not..
-
+- > **3. Keyword Purge**
+    Very handy function when you need to delete servers which do not have a string in their name. This function is NOT case sensitive. Force Deletes Servers.
 ## 3. Power Actions
     > This function allows you to bulk start, stop, and kill servers by providing an importlist.
 ## 4. Suspension Manager

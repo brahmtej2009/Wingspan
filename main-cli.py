@@ -89,7 +89,11 @@ def banner(animation=False, stars=False, clear=True):
         ]
 
         plain_width = max(len(l) for l in raw_lines)
-        columns = os.get_terminal_size().columns
+        # AI USED HERE
+        try:
+            columns = os.get_terminal_size().columns
+        except OSError:
+            columns = 80
         padding = max((columns - plain_width) // 2, 0)
         pad_str = " " * padding
 
@@ -232,7 +236,8 @@ def _bootstrap():
             
             # If any error, raise that error and trigger exit
             sys.exit(result.returncode)
-        except:
+        # AI USED HERE
+        except Exception:
             # Catch raised error, and exit cleanly
             print("\n\nWingspan Exited.")
             exit()
@@ -332,8 +337,13 @@ def power_on_self_test():
         logging.info("Created Logfile")
     
     #----API----
-    r=requests.get(url=os.getenv("panel_url")+"/api/application/nodes",headers=HEADERS)
-    status=str(r.status_code)
+    # AI USED HERE
+    try:
+        r=requests.get(url=os.getenv("panel_url")+"/api/application/nodes",headers=HEADERS,timeout=10)
+        status=str(r.status_code)
+    except requests.exceptions.RequestException as e:
+        logging.critical(f"Could not reach the panel: {e}")
+        status="500"
     if status.startswith("2"):
         logging.info("Panel and API Key are working correctly!")
     elif status in ["403","401"]:
@@ -484,7 +494,8 @@ def setup_wizard():
 # LOGGING
 # ---------------------------------------------------------------------------
 
-def init_logger():
+def init_logger():         # AI USED HERE
+
     
     logging.basicConfig(filename=LOG_PATH, level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.getLogger(__name__)
@@ -501,6 +512,14 @@ def log_action(level, action, server_id, server_name, before=None, after=None):
 # ---------------------------------------------------------------------------
 # API LAYER
 # ---------------------------------------------------------------------------
+# AI USED HERE
+def _request_kwargs(method, data):
+    """Send data as a JSON body for POST/PATCH/PUT, as URL parameters otherwise."""
+    if method in ("POST", "PATCH", "PUT") and data:
+        return {"json": data}
+    return {"params": data if data else {}}
+
+
 def api_request(method, endpoint, data=None):
     """
     Generic wrapper around requests for talking to the Pterodactyl API.
@@ -515,7 +534,8 @@ def api_request(method, endpoint, data=None):
 
     Return parsed JSON response (dict), or suitable error on failure."""
     logging.info(f"API Request: {method} {endpoint} with data: {data}")
-    req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
+    # AI USED HERE
+    req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, **_request_kwargs(method, data))
     tries=0
     while req.status_code==429:
         if tries>=5:
@@ -526,7 +546,7 @@ def api_request(method, endpoint, data=None):
         print(f"Rate Limited.. Trying after {5*tries} Seconds..")
         logging.warning(f"Rate Limited.. Trying after {5*tries} Seconds..")
         time.sleep(5*tries)
-        req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, params=data if data else {})
+        req=requests.request(method=method, url=os.getenv("panel_url")+endpoint,headers=HEADERS, **_request_kwargs(method, data))
 
     if req.status_code in [200,201,204] and not req.text.strip(): # Case of successful receive WITHOUT data
         logging.info(f"Successful API Request {method} to {endpoint}. No data received.")
@@ -2093,6 +2113,12 @@ def server_info():
 # Data Processing 
 # ---------------------------------------------------------------------------
 
+# AI USED HERE
+def _exports_file(name):
+    """Full path of a file inside the exports folder next to this program."""
+    return os.path.join(PROJECT_ROOT, "exports", name)
+
+
 def get_importlist(inp1=None,function="/", retry=True,verify=True,fn_name="Server Purge"):
     logging.info(f"Fetching import list for function {fn_name} from file {inp1}")
     while True:
@@ -2110,8 +2136,8 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True,fn_name="Serve
 
         elif inp1.lower() == "h":
             logging.info("User returned to homepage from get_importlist function.")
-            while True:
-                home_page()
+            home_page()
+            return None
         else:
             if not inp1.endswith(".csv"):
                 path = inp1 + ".csv"
@@ -2181,9 +2207,9 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True,fn_name="Serve
                                 )
                                 return selected_list
                 else:
-                    if os.path.isfile(f"exports/{path}"):
+                    if os.path.isfile(_exports_file(path)):
                         logging.info(f"Import file found inside exports folder with path {path}")
-                        inp1 = f"exports/{path}"
+                        inp1 = _exports_file(path)
                         continue
                     else:
                         logging.error(f"Import file with path {path} not found")
@@ -2268,9 +2294,9 @@ def get_importlist(inp1=None,function="/", retry=True,verify=True,fn_name="Serve
                                     )
                                 return selected_list
                 else:
-                    if os.path.isfile(f"exports/{path}"):
+                    if os.path.isfile(_exports_file(path)):
                         logging.info(f"Import file found inside exports folder with path {path}")
-                        inp1 = f"exports/{path}"
+                        inp1 = _exports_file(path)
                         continue
                     else:
                         logging.error(f"Import file with path {path} not found")
@@ -2290,65 +2316,45 @@ def export_list(servers,filepath,HEAD=None):
     with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         if HEAD:
-            writer.writerow(HEAD)
+            writer.writerow([HEAD])
         for srv in servers:
             writer.writerow(srv)
 
 def get_servers(limit=None):
     logging.info(f"Getting Servers with limit {limit}")
-    if limit==None: # Get all servers available
-        
-        page=1
-        data={'per_page': 200,'page':page}
+    combined = []
+    page = 1
+    while True:
         try:
-            req,status=api_request("GET","/api/application/servers",data=data)
+            req, status = api_request("GET", "/api/application/servers", data={'per_page': 100, 'page': page})
         except Exception as e:
-            print(e)
-            time.sleep(5)
-            return
-        
-        if req and status==200:
-            server_list=req
-            total_pages=server_list["meta"]["pagination"]["total_pages"]
-            if total_pages==1:
-                logging.info(f"Server Fetch Successful {status}")
-                return server_list
+            print(f"Could not load servers from the panel: {e}")
+            time.sleep(3)
+            return None
+        if not req or str(status) != "200":
+            print(f"Error while getting servers list at get_servers() : {status}")
+            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}, Page: {page}")
+            return None
+        combined += req.get("data", [])
+        total_pages = req.get("meta", {}).get("pagination", {}).get("total_pages", 1)
+        if page >= total_pages or (limit and len(combined) >= limit):
+            break
+        page += 1
+    if limit:
+        combined = combined[:limit]
+    logging.info(f"Server Fetch Successful, {len(combined)} servers found.")
+    return {"data": combined}
 
-            else:
-                data={'per_page': 200*total_pages,'page':page}
-                req,status=api_request("GET","/api/application/servers",data=data)
-                if req and status==200:
-                    logging.info(f"Server Fetch Successful {status}")
-                    return req.json()
-                else:
-                    print(f"Error while getting servers list at get_servers() : {status}")  
-                    logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status},Pages: {total_pages}")
-        else:
-            print(f"Error while getting servers list at get_servers() : {status}")  
-            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
-        
-    else: # If user specified a limit of servers.
-        data={'per_page': limit}
-        req,status=api_request("GET", "/api/application/servers", data=data)
-        if req and status==200:
-            server_list=req
-            total_pages=server_list["meta"]["pagination"]["total_pages"]
-            if total_pages==1:
-                logging.info(f"Server Fetch Successful {status}")
-                return server_list
-            else:
-                logging.info(f"Too high limit, Unable to fit {limit} servers.")
-                
-        else:
-            print(f"Error while getting servers list at get_servers() : {status}")  
-            logging.error(f"Failed trying to get servers, Limit: {limit}, Status: {status}")
-            
 # ---------------------------------------------------------------------------
 # Feature Functions 
 # ---------------------------------------------------------------------------
 
 def search_server():
     server_list=get_servers()
+    # AI USED HERE
+    if server_list is None:
+        time.sleep(3)
+        return
     try:
         parameters_list=list(server_list["data"][0]["attributes"].keys())
     except IndexError:
@@ -2379,7 +2385,11 @@ def search_server():
     server_list=params,
     headers=[f"{Fore.BLUE}Select all filters to filter from."])
     
-    if selected_params is None:
+    if selected_params is None or selected_params==[]:
+        
+        pt.panel(size=70,center=False,title="/search-and-info/info/export",
+        content=["No servers left in selection.","Returning to Homepage..."],border_bold=True,color="cyan")
+        time.sleep(3)
         return
 
     parameters_filter=[]
@@ -2751,7 +2761,7 @@ def search_server():
             all_selected=True,
         )
         
-        if selected_rows is None:
+        if selected_rows is None or selected_rows==[]:
             print(f"{Fore.RED}No servers selected for export.")
             time.sleep(2)
             return
@@ -2780,7 +2790,7 @@ def search_server():
                 time.sleep(1)
                 banner()
                 
-                export_list(servers_filtering_list,export_name+".csv",HEAD=[os.getenv("panel_url")])
+                export_list(servers_filtering_list,export_name+".csv",HEAD=os.getenv("panel_url"))
                 print(f"{Fore.GREEN}Exported {len(servers_filtering_list)} servers to {export_name}.csv successfully.")
                 time.sleep(5)
                 return
@@ -2794,6 +2804,14 @@ def search_server():
 def purge_srv():
     """Function to bulk delete servers from an importlist"""
     importlist=get_importlist(function="/purge/server-purge/", retry=True, fn_name="Server Purge")
+    
+    if not importlist:
+        pt.panel(size=70,center=False,title="/purge/server-purge/confirmation",
+        content=[f"{Fore.MAGENTA}{Style.BRIGHT}No servers selected to purge.",
+                 "Returning to Homepage..."],border_bold=True,color="red")
+        time.sleep(3)
+        return
+
     while True:
         banner()
         pt.panel(size=70,center=False,title="/purge/server-purge/confirmation", content=[f"{Fore.MAGENTA}{Style.BRIGHT}You have chosen to purge {len(importlist)} servers.",f"{Fore.RED}This process is irreversible and will delete all selected servers!","Press Y to confirm, N to Cancel, E to edit selection"],border_bold=True,color="red")
@@ -2802,6 +2820,15 @@ def purge_srv():
             break
         elif inp.lower()=="e":
             importlist=get_importlist(function="/purge/server-purge/", retry=True)
+            
+            if not importlist:
+                pt.panel(size=70,center=False,title="/purge/server-purge/confirmation",
+                content=[f"{Fore.MAGENTA}{Style.BRIGHT}No servers selected to purge.",
+                        "Returning to Homepage..."],border_bold=True,color="red")
+                time.sleep(3)
+                return
+            
+            
             continue
         else:
             pt.panel(size=70,center=False,title="/purge/server-purge/cancelled", content=[f"{Fore.RED}{Style.BRIGHT}Server purge cancelled. Returning to homepage."],border_bold=True,color="green")
@@ -2847,7 +2874,12 @@ def purge_srv():
     
     pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.RED}{Style.BRIGHT}Started Purging {len(importlist)} servers."],border_bold=True,color="red")
     serverdict={}
-    all_srv_list=get_servers()["data"]
+    all_srv_list=get_servers()
+    if all_srv_list is None:
+        pt.panel(size=70,center=False,title="/purge/server-purge/processing", content=[f"{Fore.RED}{Style.BRIGHT}Could not load the server list from the panel. Nothing was deleted."],border_bold=True,color="red")
+        input()
+        return
+    all_srv_list=all_srv_list["data"]
     for server in all_srv_list:
         serverdict[server["attributes"]["id"]]=server["attributes"]["name"]
         
@@ -2877,18 +2909,15 @@ def purge_srv():
                 continue
         
     
-        if forcedel:
-            dt={'force':True}
-        else:
-            dt=None
+        endpoint=(f"/api/application/servers/{id}/force" if forcedel else f"/api/application/servers/{id}")
         
         try:
-            r,status=api_request("DELETE",f"/api/application/servers/{id}",data=dt)
+            r,status=api_request("DELETE",endpoint)
             status=str(status)
         except Exception as e:
-            print(e)
-            time.sleep(5)
-            return
+            print(f"Could not delete server {id} ({name}): {e}",flush=True)
+            time.sleep(2)
+            r,status=None,"error"
         if r==None or not status.startswith('2'):
             logging.error(f"Purge: Unable to delete server with ID: {id}; Name: '{name}'; Error: {status} ; Response: {r}")
             failed+=1
@@ -2912,6 +2941,8 @@ def purge_users():
 
     try:
         # DO initial api req to get starting data + meta info
+        # AI USED HERE
+
         r,status=api_request('GET','/api/application/users?include=servers&per_page=100')
     except Exception as e:
         print(e)
@@ -2922,6 +2953,8 @@ def purge_users():
     
     else:
         print(f"{Style.BRIGHT}{Fore.RED}Error with Pterodactyl. Check your installation.")
+        time.sleep(3)
+        return
         
     if r['meta']['pagination']['total_pages']>1: # If more data is there instead of the 100 users above, we go through each page.
         for i in range(2,int(r['meta']['pagination']['total_pages'])+1):
@@ -2937,7 +2970,7 @@ def purge_users():
             else:
                 print(f"{Style.BRIGHT}{Fore.RED}Error with Pterodactyl. Check your installation.")
                 time.sleep(2)
-                exit()
+                return
     usr_server=[]
     usr_noserver=[]
     admin_nosrv=[]
@@ -2969,7 +3002,7 @@ def purge_users():
             return
         else:
             print(f"{Fore.RED}Invalid Input. Please enter Y for yes and N for no.")
-            time.sleep
+            time.sleep(1)
             continue
             
     if len(usr_noserver)==0:
@@ -3089,9 +3122,9 @@ def purge_users():
         try:
             r,status=api_request("DELETE", f"/api/application/users/{i[0]}")
         except Exception as e:
-            print(e)
-            time.sleep(5)
-            return
+            print(f"Could not delete user {i[0]} - {i[1]}: {e}")
+            failed+=1
+            continue
         if str(status).startswith("2"):
             print(f"{Fore.BLUE}Deleted User{Fore.GREEN} {i[0]} - {i[1]}")
             success+=1
@@ -3131,8 +3164,10 @@ def keyword_server_purge():
                     print(f', "{i}"',end="")
             print()
 
-        kw=input("--::>").lower()
+        kw=input("--::>").lower() # Universal Acceptor
         logging.info(f"New keyword added in Keyword Search: {kw}")
+        if kw=='h':        # AI USED HERE
+            return
         if kw=='':
             if len(keywords)<1:
                 print(f"{Fore.RED}You can not proceed unless you add atleast one keyword.")
@@ -3159,19 +3194,22 @@ def keyword_server_purge():
         keywords.append(kw.lower())
         
     r=get_servers(limit=None) # Get all available servers
+    if r is None:
+        print(f"{Fore.RED}Could not load the server list from the panel.")
+        time.sleep(3)
+        return
     servers=r['data']
     srvdata=[]
     for i in servers:
         name=i['attributes']['name'].lower()
-        description=i['attributes']['description'].lower()
+        description=(i['attributes']['description'] or "").lower()
         identifier=i['attributes']['identifier'].lower()
         id=i['attributes']['id']
         logging.info(f"Processing Server {name},{id}")
-        for key in keywords:
-            if (not (key in name)) or (not (key in description)): #or (not (key in identifier))
-                logging.info(f"Server with id {id} addddd")
-                srvdata.append([id,name])
-                break
+        kept = any(key in name or key in description for key in keywords)
+        if not kept:
+            logging.info(f"Server with id {id} has no keyword, marked for purge.")
+            srvdata.append([id,name])
     
     
     if len(srvdata) == 0:
@@ -3190,7 +3228,7 @@ def keyword_server_purge():
         f"{Fore.RED}This could be distructive, do you wish to proceed?."],
         border_bold=True,color="cyan")
     
-    inp=input("--:(y/n):>")
+    inp=input("--:(y/n):>") # Validated Input
     
     if inp!="y":
         pt.panel(size=70,center=False,title='/purge/keyword-purge/cancelled',content=[
@@ -3207,7 +3245,15 @@ def keyword_server_purge():
                 headers=[f"{Fore.BLUE}ID", f"{Fore.BLUE}Name"],
                 all_selected=True,
             )
-    
+    if server_to_del==None or server_to_del==[]:
+        banner()
+        pt.panel(size=70,center=False,title='/purge/keyword-purge/completed',content=[
+        f"{Fore.RED}{Style.BRIGHT}No Servers to Delete!",
+        "Returning to Homepage"],
+        border_bold=True,color="cyan")
+        time.sleep(3)
+        return
+        
     banner()
     pt.panel(size=70,center=False,title='/purge/keyword-purge/confirm',content=[
         f"{Fore.RED}{Style.BRIGHT}You are about to delete {len(server_to_del)} servers!",
@@ -3224,21 +3270,30 @@ def keyword_server_purge():
         border_bold=True,color="cyan")
         time.sleep(5)
         return
+    banner()
     
+    success=0
+    fail=0
     for i in server_to_del:
         try:
-            r,status=api_request("DELETE",f"/api/application/servers/{id}?force=true")
+            r,status=api_request("DELETE",f"/api/application/servers/{i[0]}/force")
         except Exception as e:
             print(e)
             time.sleep(5)
-            return
-        if status==204:
-            print(f"{Fore.RED}Deleted Server {id}")
-            logging.info(f"Deleted Server with ID {id} from keyword purge.")
+            fail+=1
+            continue
+        if str(status).startswith("2"):
+            print(f"{Fore.RED}Deleted Server {i[0]}")
+            logging.info(f"Deleted Server with ID {i[0]} from keyword purge.")
+            success+=1
+        else:
+            print(f"{Fore.RED}Failed to Delete Server {i[0]} - {i[1]}")
+            logging.error(f"Failed to delete server with ID: {i[0]}, Name: {i[1]}")
+            fail+=1
             
     pt.panel(size=70,center=False,title='/purge/keyword-purge/confirm',content=[
-        f"{Fore.RED}{Style.BRIGHT}Deleted {len(server_to_del)} servers!",
-        f"{Style.DIM}Press Enter to return to Homepage!"],
+        f"{Fore.GREEN}{Style.BRIGHT}Server Purge Complete!",
+        f"{Fore.GREEN}Failed: {Fore.RED}{fail}{Fore.WHITE},{Fore.GREEN}Success: {Fore.RED}{success}"],
         border_bold=True,color="cyan")
     input()
     return
@@ -3275,8 +3330,11 @@ def main():
         power_on_self_test()
 #        load_config()
         init_logger()
-        while True:
-            home_page()
+        try:
+            while True:
+                home_page()
+        except KeyboardInterrupt:
+            print("\nWingspan exited.")
         
     else:    
        # Route immediate commands bypassing infrastructure setup
@@ -3290,4 +3348,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
